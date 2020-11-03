@@ -17,6 +17,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "10.Coldairarrow.UnitTests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "03.Coldairarrow.IBusiness", "Coldairarrow.IBusiness\03.Coldairarrow.IBusiness.csproj", "{4422EF5A-9E20-450D-B0BD-643DED2B9219}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "08.CCPP.PaymentAPI", "CCPP.PaymentAPI\08.CCPP.PaymentAPI.csproj", "{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "07.CCPP.Cryptocurrency.Common", "CCPP.Cryptocurrency.Common\07.CCPP.Cryptocurrency.Common.csproj", "{09AE7778-C846-46AF-A8F6-58765DC72A1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,14 @@ Global
 		{4422EF5A-9E20-450D-B0BD-643DED2B9219}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4422EF5A-9E20-450D-B0BD-643DED2B9219}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4422EF5A-9E20-450D-B0BD-643DED2B9219}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09AE7778-C846-46AF-A8F6-58765DC72A1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09AE7778-C846-46AF-A8F6-58765DC72A1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09AE7778-C846-46AF-A8F6-58765DC72A1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09AE7778-C846-46AF-A8F6-58765DC72A1A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
-﻿using CSRedis;
+﻿using CacheManager.Core;
+using CSRedis;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Redis;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +53,10 @@ namespace Coldairarrow.Util
                             RedisHelper.Initialization(csredis);
                             services.AddSingleton(csredis);
                             services.AddSingleton<IDistributedCache>(new CSRedisCache(RedisHelper.Instance));
+                            services.AddCacheManagerConfiguration(ConfigHelper.Configuration, cfg => cfg.WithMicrosoftLogging(services))
+                                    .AddCacheManager<int>(ConfigHelper.Configuration, configure: builder => builder.WithJsonSerializer())
+                                    .AddCacheManager<DateTime>(inline => inline.WithDictionaryHandle())
+                                    .AddCacheManager(); 
                         }; break;
                     default: throw new Exception("缓存类型无效");
                 }

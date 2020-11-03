@@ -22,7 +22,8 @@ namespace Coldairarrow.Util
                         {
                             var builder = new ConfigurationBuilder()
                                 .SetBasePath(AppContext.BaseDirectory)
-                                .AddJsonFile("appsettings.json");
+                                .AddJsonFile("appsettings.json")
+                                .AddJsonFile("cache.json");
                             _config = builder.Build();
                         }
                     }

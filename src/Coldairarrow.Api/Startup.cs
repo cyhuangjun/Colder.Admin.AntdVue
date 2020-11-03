@@ -1,4 +1,5 @@
-﻿using Coldairarrow.Util;
+﻿using CacheManager.Core;
+using Coldairarrow.Util;
 using EFCore.Sharding;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSwag;
+using System;
 using System.Linq;
 
 namespace Coldairarrow.Api
@@ -26,7 +28,7 @@ namespace Coldairarrow.Api
             services.AddAutoMapper();
             services.AddEFCoreSharding(config =>
             {
-                var dbOptions = Configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
+                var dbOptions = ConfigHelper.Configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
 
                 config.UseDatabase(dbOptions.ConnectionString, dbOptions.DatabaseType);
             });
@@ -49,6 +51,7 @@ namespace Coldairarrow.Api
             //swagger
             services.AddOpenApiDocument(settings =>
             {
+                settings.Title = "加密货币支付系统后台";
                 settings.AllowReferencesWithProperties = true;
                 settings.AddSecurity("身份认证Token", Enumerable.Empty<string>(), new OpenApiSecurityScheme()
                 {
@@ -59,6 +62,7 @@ namespace Coldairarrow.Api
                     Type = OpenApiSecuritySchemeType.Http
                 });
             });
+            services.AddLogging();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
