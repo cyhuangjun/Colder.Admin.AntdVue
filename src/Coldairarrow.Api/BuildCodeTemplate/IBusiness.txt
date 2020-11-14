@@ -2,6 +2,8 @@
 using Coldairarrow.Util;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
+using System;
 
 namespace Coldairarrow.Business.%areaName%
 {
@@ -12,5 +14,11 @@ namespace Coldairarrow.Business.%areaName%
         Task AddDataAsync(%entityName% data);
         Task UpdateDataAsync(%entityName% data);
         Task DeleteDataAsync(List<string> ids);
+        %entityName% GetEntity(Expression<Func<%entityName%, bool>> expression);
+        Task<%entityName%> GetEntityAsync(Expression<Func<%entityName%, bool>> expression);
+        List<%entityName%> GetList(Expression<Func<%entityName%, bool>> expression);
+        Task<List<%entityName%>> GetListAsync(Expression<Func<%entityName%, bool>> expression);
+        List<%entityName%> GetList<TKey>(Expression<Func<%entityName%, bool>> expression, Expression<Func<%entityName%, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
+        Task<List<%entityName%>> GetListAsync<TKey>(Expression<Func<%entityName%, bool>> expression, Expression<Func<%entityName%, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
     }
 }

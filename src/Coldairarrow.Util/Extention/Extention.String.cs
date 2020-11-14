@@ -568,5 +568,76 @@ namespace Coldairarrow.Util
             else
                 return false;
         }
+        private static readonly string _secretKey = "ToMurmurHashENWqpfvJ63NWooLrtcXMurmurHash2";
+        public static string CreateSign(this string content)
+        {
+            var hmacSha = new HMACSHA384(Encoding.UTF8.GetBytes(_secretKey));
+            var hash = hmacSha.ComputeHash(Encoding.UTF8.GetBytes(content)).ToArray();
+            return Convert.ToBase64String(hash);
+        }
+
+        /// <summary>
+        /// 16进字符串转换为int
+        /// </summary>
+        /// <param name="value">16进字符串</param>
+        /// <returns></returns>
+        public static int GetIntFromHex(this string value)
+        {
+            return Convert.ToInt32(value, 16);
+        }
+
+        /// <summary>
+        /// 16进字符串转换为int64
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static ulong GetUInt64FromHex(this string value)
+        {
+
+            return Convert.ToUInt64(value, 16);
+        }
+
+        /// <summary>
+        /// 16进字符串转换为int64
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static long GetInt64FromHex(this string value)
+        {
+
+            return Convert.ToInt64(value, 16);
+        }
+
+
+        /// <summary>
+        /// int转换为Hex字符窜
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ConvertToHex(this int value)
+        {
+            return $"0x{value.ToString("X")}";
+        }
+        /// <summary>
+        /// int64 转换为Hex字符窜
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+
+        public static string ConvertToHex(this Int64 value)
+        {
+            return $"0x{value.ToString("X")}";
+        }
+
+        /// <summary>
+        /// uint64 转换为Hex字符窜
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+
+        public static string ConvertToHex(this UInt64 value)
+        {
+            return $"0x{value.ToString("X")}";
+        }
     }
 }

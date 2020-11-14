@@ -62,6 +62,14 @@ namespace Coldairarrow.Entity.Base_Manage
         /// 所属部门Id
         /// </summary>
         public String DepartmentId { get; set; }
+
+        public bool? IsFrozen { set; get; }
+
+        public string ApiKey { set; get; }
+
+        public string SecretKey { set; get; }
+
+        public string CoinConfigID { set; get; }
     }
 
     public enum Sex

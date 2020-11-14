@@ -46,6 +46,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// AmountFrom
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal AmountFrom { get; set; }
 
         /// <summary>
@@ -56,6 +57,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// AmountTo
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal AmountTo { get; set; }
 
         /// <summary>
@@ -66,17 +68,19 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// 货币手续费率
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal? FeeRate { get; set; }
 
         /// <summary>
         /// 手续费
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal? Fee { get; set; }
 
         /// <summary>
-        /// 钱包交易ID
+        /// 转出ID
         /// </summary>
-        public String TXID { get; set; }
+        public String TransactionOutID { get; set; }
 
         /// <summary>
         /// ApproverID
@@ -96,7 +100,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// CallBackStatus
         /// </summary>
-        public Int32? CallBackStatus { get; set; }
+        public APICallBackStatus? CallBackStatus { get; set; }
 
         /// <summary>
         /// 创建时间

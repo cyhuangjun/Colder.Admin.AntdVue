@@ -38,12 +38,84 @@ namespace Coldairarrow.Entity
         /// 加密货币资产不足
         /// </summary>
         public const int CryptocurrencyAssetsNotEnought = 40007;
+        /// <summary>
+        /// SecretKey不存在
+        /// </summary>
+        public const int SecretKeyNotFound = 40008;
+        /// <summary>
+        /// HTTP Head Api_key不存在
+        /// </summary>
+        public const int ApiKeyNotFound = 40009;
+        /// <summary>
+        /// 签名不匹配
+        /// </summary>
+        public const int SignaturesNotMatch = 40010;
+        /// <summary>
+        /// 账号被冻结
+        /// </summary>
+        public const int UserIsFrozen = 40011;
+        /// <summary>
+        /// HTTP Head TimeStamp 不存在
+        /// </summary>
+        public const int TimeStampNotFound = 40012;
+        /// <summary>
+        /// HTTP Head signature不存在
+        /// </summary>
+        public const int SignatureNotFound = 40013;
+        /// <summary>
+        /// HTTP Head TimeStamp 错误
+        /// </summary>
+        public const int TimeStampError = 40014;
+        /// <summary>
+        /// 资产ID必填
+        /// </summary>
+        public const int AssetsIDRequired = 40015;
+        /// <summary>
+        /// 用户ID必填
+        /// </summary>
+        public const int UserIDRequired = 40016;
+        /// <summary>
+        /// 关联ID必填
+        /// </summary>
+        public const int RelateIDRequired = 40017;
+        /// <summary>
+        /// 资产变动数为0
+        /// </summary>
+        public const int AssetsChangeAmountZero = 40018;
+        /// <summary>
+        /// 操作超时
+        /// </summary>
+        public const int OperationTimeout = 40019;
+        /// <summary>
+        /// 资产不足
+        /// </summary>
+        public const int AssetsNotEnought = 40020;
+        /// <summary>
+        /// 用户ID不存在
+        /// </summary>
+        public const int UserIDNotExist = 40021;
+        /// <summary>
+        /// 币种未配置
+        /// </summary>
+        public const int CoinConfigNotFound = 40022;
+        /// <summary>
+        /// 小于最小充币量
+        /// </summary>
+        public const int PaymentLessThanMinQty = 40023;
+        /// <summary>
+        /// 小于最小提币量
+        /// </summary>
+        public const int TransferLessThanMinQty = 40024;
+        /// <summary>
+        /// 交易对评估价未发现
+        /// </summary>
+        public const int EstimatePriceNotFound = 40025;
 
         #region 基础
         /// <summary>
         /// 处理成功
         /// </summary>
-        public const int Success = 200;
+        public const int Success = -1;
         /// <summary>
         /// 操作失败
         /// </summary>

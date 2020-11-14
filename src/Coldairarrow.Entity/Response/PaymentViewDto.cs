@@ -33,6 +33,10 @@ namespace Coldairarrow.Entity.Response
         /// </summary>
         public string OrderId { set; get; }
         /// <summary>
+        /// inner store order ID, e.g. "RGDBP-21314"
+        /// </summary>
+        public string UID { set; get; }
+        /// <summary>
         /// inner store order description, e.g. "Apple Macbook Pro 2019 x 1"
         /// </summary>
         public string OrderDescription { set; get; }

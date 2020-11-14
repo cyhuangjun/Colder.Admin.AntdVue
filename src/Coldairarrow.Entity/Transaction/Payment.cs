@@ -24,10 +24,11 @@ namespace Coldairarrow.Entity.Transaction
         public String UserID { get; set; }
 
         /// <summary>
-        /// OrderId
+        /// UID
         /// </summary>
-        public String OrderId { get; set; }
+        public String UID { get; set; }
 
+        public string OrderId { set; get; }
         /// <summary>
         /// OrderDescription
         /// </summary>
@@ -36,11 +37,13 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// 手续费率
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal? FeeRate { get; set; }
 
         /// <summary>
         /// 手续费
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal? Fee { get; set; }
 
         /// <summary>
@@ -56,6 +59,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// PriceAmount
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal PriceAmount { get; set; }
 
         /// <summary>
@@ -66,24 +70,23 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// PayAmount
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal PayAmount { get; set; }
 
         /// <summary>
         /// PayAddress
         /// </summary>
         public String PayAddress { get; set; }
-
-        public string SecurityKey { set; get; }
-        public string PrivateKey { set; get; }
-        public string PublicKey { set; get; }
         /// <summary>
         /// 实际支付
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal ActuallyPaid { get; set; }
 
         /// <summary>
         /// 实际入账金额
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public Decimal ActualAmount { get; set; }
 
         /// <summary>

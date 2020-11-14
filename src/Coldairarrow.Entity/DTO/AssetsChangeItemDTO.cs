@@ -16,9 +16,9 @@ namespace Coldairarrow.Entity.DTO
         /// </summary>
         public string UserID { get; set; }
         /// <summary>
-        /// 资产ID
+        /// CoinID
         /// </summary>
-        public string AssetsID { get; set; }
+        public string CoinID { get; set; }
         /// <summary>
         /// 冻结资产变动数，+表示增加，-表示扣除
         /// </summary>

@@ -1,14 +1,30 @@
-﻿namespace Coldairarrow.Util
+﻿using Microsoft.EntityFrameworkCore.Storage;
+
+namespace Coldairarrow.Util
 {
     /// <summary>
     /// Ajax请求结果
     /// </summary>
     public class AjaxResult
     {
+        bool success = true;
         /// <summary>
         /// 是否成功
         /// </summary>
-        public bool Success { get; set; } = true;
+        public bool Success 
+        { 
+            get 
+            {
+                if (this.ErrorCode > 0)
+                    return false;
+                else
+                    return success;
+            } 
+            set 
+            { 
+                success = value; 
+            } 
+        }
 
         /// <summary>
         /// 错误代码

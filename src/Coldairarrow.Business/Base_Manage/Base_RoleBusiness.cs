@@ -65,7 +65,7 @@ namespace Coldairarrow.Business.Base_Manage
             return (await GetDataListAsync(new PageInput<RolesInputDTO> { Search = new RolesInputDTO { roleId = id } })).Data.FirstOrDefault();
         }
 
-        [DataAddLog(UserLogType.系统角色管理, "RoleName", "角色")]
+        [DataAddLog(UserLogType.SystemRoleManagement, "RoleName", "角色")]
         [DataRepeatValidate(new string[] { "RoleName" }, new string[] { "角色名" })]
         public async Task AddDataAsync(Base_RoleInfoDTO input)
         {
@@ -73,7 +73,7 @@ namespace Coldairarrow.Business.Base_Manage
             await SetRoleActionAsync(input.Id, input.Actions);
         }
 
-        [DataEditLog(UserLogType.系统角色管理, "RoleName", "角色")]
+        [DataEditLog(UserLogType.SystemRoleManagement, "RoleName", "角色")]
         [DataRepeatValidate(new string[] { "RoleName" }, new string[] { "角色名" })]
         [Transactional]
         public async Task UpdateDataAsync(Base_RoleInfoDTO input)
@@ -82,7 +82,7 @@ namespace Coldairarrow.Business.Base_Manage
             await SetRoleActionAsync(input.Id, input.Actions);
         }
 
-        [DataDeleteLog(UserLogType.系统角色管理, "RoleName", "角色")]
+        [DataDeleteLog(UserLogType.SystemRoleManagement, "RoleName", "角色")]
         [Transactional]
         public async Task DeleteDataAsync(List<string> ids)
         {
