@@ -31,6 +31,10 @@ namespace Coldairarrow.Entity.Request
         /// </summary>
         public string CallbackUrl { set; get; }
         /// <summary>
+        ///  (required) - clientId
+        /// </summary>
+        public string UID { set; get; }
+        /// <summary>
         ///  (optional) - inner store order ID, e.g. "RGDBP-21314"
         /// </summary>
         public string OrderId { set; get; }

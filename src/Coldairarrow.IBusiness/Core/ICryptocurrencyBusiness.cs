@@ -3,11 +3,12 @@ using Coldairarrow.Entity.Foundation;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Coldairarrow.IBusiness.Core
 {
     public interface ICryptocurrencyBusiness
-    {
-        ICryptocurrencyProvider GetCryptocurrencyProvider(Coin coin);
+    { 
+        Task<ICryptocurrencyProvider> GetCryptocurrencyProviderAsync(Coin coin);
     }
 }

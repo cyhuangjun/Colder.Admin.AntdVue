@@ -52,14 +52,14 @@ namespace Coldairarrow.Util
                             var csredis = new CSRedisClient(cacheOption.RedisEndpoint);
                             RedisHelper.Initialization(csredis);
                             services.AddSingleton(csredis);
-                            services.AddSingleton<IDistributedCache>(new CSRedisCache(RedisHelper.Instance));
-                            services.AddCacheManagerConfiguration(ConfigHelper.Configuration, cfg => cfg.WithMicrosoftLogging(services))
-                                    .AddCacheManager<int>(ConfigHelper.Configuration, configure: builder => builder.WithJsonSerializer())
-                                    .AddCacheManager<DateTime>(inline => inline.WithDictionaryHandle())
-                                    .AddCacheManager(); 
+                            services.AddSingleton<IDistributedCache>(new CSRedisCache(RedisHelper.Instance)); 
                         }; break;
                     default: throw new Exception("缓存类型无效");
                 }
+                services.AddCacheManagerConfiguration(ConfigHelper.Configuration, cfg => cfg.WithMicrosoftLogging(services))
+                                    .AddCacheManager<int>(ConfigHelper.Configuration, configure: builder => builder.WithJsonSerializer())
+                                    .AddCacheManager<DateTime>(inline => inline.WithDictionaryHandle())
+                                    .AddCacheManager();
             });
 
             return hostBuilder;

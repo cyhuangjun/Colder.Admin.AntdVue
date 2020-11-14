@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Coldairarrow.Entity.Enum;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -30,7 +31,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// ProviderType
         /// </summary>
-        public Int32 ProviderType { get; set; }
+        public ProviderType ProviderType { get; set; }
 
         /// <summary>
         /// ImageUrl
@@ -122,5 +123,14 @@ namespace Coldairarrow.Entity.Foundation
         /// </summary>
         public String LastUpdateUserID { get; set; }
 
+        public string ThridApiUrl { set; get; }
+        /// <summary>
+        /// 钱包安全密钥
+        /// </summary> 
+        public string WalletSecurityKey { get; set; }
+
+        public string TokenCoinKey { set; get; }
+
+        public bool IsVirtualAddress { set; get; }
     }
 }

@@ -1,7 +1,11 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -249,5 +253,76 @@ namespace Coldairarrow.Util
 
             return resObj;
         }
+
+        #region Object To Dictionary
+        private static readonly MethodInfo AddToDictionaryMethod = typeof(IDictionary<string, object>).GetMethod("Add");
+        private static readonly ConcurrentDictionary<Type, Func<object, IDictionary<string, object>>> Converters = new ConcurrentDictionary<Type, Func<object, IDictionary<string, object>>>();
+        private static readonly ConstructorInfo DictionaryConstructor = typeof(Dictionary<string, object>).GetConstructors().FirstOrDefault(c => c.IsPublic && !c.GetParameters().Any());
+        public static IDictionary<string, object> ExpressionToDictionary(this object obj) => obj == null ? null : Converters.GetOrAdd(obj.GetType(), o =>
+        {
+            var outputType = typeof(IDictionary<string, object>);
+            var inputType = obj.GetType();
+            var inputExpression = Expression.Parameter(typeof(object), "input");
+            var typedInputExpression = Expression.Convert(inputExpression, inputType);
+            var outputVariable = Expression.Variable(outputType, "output");
+            var returnTarget = Expression.Label(outputType);
+            var body = new List<Expression>
+        {
+            Expression.Assign(outputVariable, Expression.New(DictionaryConstructor))
+        };
+            body.AddRange(
+                from prop in inputType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy)
+                where prop.CanRead && (prop.PropertyType.IsPrimitive || prop.PropertyType == typeof(string))
+                let getExpression = Expression.Property(typedInputExpression, prop.GetMethod)
+                select Expression.Call(outputVariable, AddToDictionaryMethod, Expression.Constant(prop.Name), getExpression));
+            body.Add(Expression.Return(returnTarget, outputVariable));
+            body.Add(Expression.Label(returnTarget, Expression.Constant(null, outputType)));
+            var lambdaExpression = Expression.Lambda<Func<object, IDictionary<string, object>>>(
+                Expression.Block(new[] { outputVariable }, body),
+                inputExpression);
+            return lambdaExpression.Compile();
+        })(obj);
+
+        public static IDictionary<string, object> ToDictionary(this object source)
+        {
+            return source.ToDictionary<object>();
+        }
+
+        public static IDictionary<string, T> ToDictionary<T>(this object source)
+        {
+            if (source == null)
+                ThrowExceptionWhenSourceArgumentIsNull();
+
+            var dictionary = new Dictionary<string, T>();
+            foreach (PropertyDescriptor property in TypeDescriptor.GetProperties(source))
+                AddPropertyToDictionary<T>(property, source, dictionary);
+            return dictionary;
+        }
+
+        private static void AddPropertyToDictionary<T>(PropertyDescriptor property, object source, Dictionary<string, T> dictionary)
+        {
+            object value = property.GetValue(source);
+            if (IsOfType<T>(value))
+            {
+                if (property.PropertyType.IsEnum)
+                {
+                    int buffer = (int)value;
+                    dictionary.Add(property.Name, (T)(object)buffer);
+                }
+                else
+                    dictionary.Add(property.Name, (T)value);
+            }
+        }
+
+        private static bool IsOfType<T>(object value)
+        {
+            return value is T;
+        }
+
+        private static void ThrowExceptionWhenSourceArgumentIsNull()
+        {
+            throw new ArgumentNullException("source", "Unable to convert object to a dictionary. The source object is null.");
+        }
+        #endregion
     }
 }

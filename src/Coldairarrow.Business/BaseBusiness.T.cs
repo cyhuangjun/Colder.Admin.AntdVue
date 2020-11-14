@@ -335,7 +335,16 @@ namespace Coldairarrow.Business
         #endregion
 
         #region 查询数据
-
+        /// <summary>
+        /// 根据表达式批量获取单条数据信息，如果有多条只会返回一条
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        public T GetEntity(Expression<Func<T, bool>> expression)
+        {
+            var entity = this.GetIQueryable(expression).FirstOrDefault();
+            return entity;
+        }
         /// <summary>
         /// 获取实体
         /// </summary>
@@ -345,7 +354,16 @@ namespace Coldairarrow.Business
         {
             return Db.GetEntity<T>(keyValue);
         }
-
+        /// <summary>
+        /// 根据表达式批量获取单条数据信息，如果有多条只会返回一条
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        public async Task<T> GetEntityAsync(Expression<Func<T, bool>> expression)
+        {
+            var entity = await this.GetIQueryable(expression).FirstOrDefaultAsync();
+            return entity;
+        }
         /// <summary>
         /// 获取实体
         /// </summary>
@@ -373,7 +391,50 @@ namespace Coldairarrow.Business
         {
             return await Db.GetIQueryable<T>().ToListAsync();
         }
-
+        /// <summary>
+        /// 获取数据集合信息
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        /// <returns></returns>
+        public List<T> GetList(Expression<Func<T, bool>> expression)
+        {
+            var query = this.GetIQueryable(expression);
+            var entityDataList = query.ToList();
+            return entityDataList;
+        }
+        /// <summary>
+        /// 获取数据集合信息
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        /// <returns></returns>
+        public async Task<List<T>> GetListAsync(Expression<Func<T, bool>> expression)
+        {
+            var query = this.GetIQueryable(expression);
+            var entityDataList = await query.ToListAsync();
+            return entityDataList;
+        }
+        /// <summary>
+        /// 获取数据集合信息
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        /// <returns></returns>
+        public List<T> GetList<TKey>(Expression<Func<T, bool>> expression, Expression<Func<T, TKey>> orderByDescending, int pageIndex, int pageSize = 20)
+        {
+            var skipCount = (pageIndex - 1) * pageSize;
+            var entityList = this.GetIQueryable(expression).OrderByDescending(orderByDescending).Skip(skipCount).Take(pageSize).ToList();  
+            return entityList;
+        }
+        /// <summary>
+        /// 获取数据集合信息
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        /// <returns></returns>
+        public async Task<List<T>> GetListAsync<TKey>(Expression<Func<T, bool>> expression, Expression<Func<T, TKey>> orderByDescending, int pageIndex, int pageSize = 20)
+        {
+            var skipCount = (pageIndex - 1) * pageSize;
+            var entityList = await this.GetIQueryable(expression).OrderByDescending(orderByDescending).Skip(skipCount).Take(pageSize).ToListAsync();
+            return entityList;
+        }
         /// <summary>
         /// 获取实体对应的表，延迟加载，主要用于支持Linq查询操作
         /// </summary>
@@ -383,8 +444,11 @@ namespace Coldairarrow.Business
             return Db.GetIQueryable<T>();
         }
         public IQueryable<T> GetIQueryable(Expression<Func<T, bool>> expression)
-        { 
-            return this.GetIQueryable().Where(expression);
+        {
+            if (expression != null)
+                return this.GetIQueryable().Where(expression);
+            else
+                return this.GetIQueryable();
         }
         #endregion
 

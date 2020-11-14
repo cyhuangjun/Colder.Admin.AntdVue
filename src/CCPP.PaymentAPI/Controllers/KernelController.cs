@@ -1,4 +1,7 @@
-﻿using Coldairarrow.Business.Foundation;
+﻿using CCPP.PaymentAPI.ActionFilter;
+using Coldairarrow.Api;
+using Coldairarrow.Business.Base_Manage;
+using Coldairarrow.Business.Foundation;
 using Coldairarrow.Entity.Request;
 using Coldairarrow.Entity.Response;
 using Coldairarrow.IBusiness.Market;
@@ -14,7 +17,9 @@ namespace CCPP.PaymentAPI.Controllers
     /// </summary>
     [Route("api/v1/[action]")]
     [ApiController]
-    public class KernelController : ControllerBase
+    [ApiLog]
+    [CheckApiKey]
+    public class KernelController : BaseController
     {
         #region DI
         private readonly ICoinBusiness _coinBus;
@@ -23,14 +28,15 @@ namespace CCPP.PaymentAPI.Controllers
         /// <summary>
         /// Cryptocurrency Payments API Constructor
         /// </summary> 
-        public KernelController(ICoinBusiness coinBus, 
+        public KernelController(ICoinBusiness coinBus,
                                 ICurrencyBusiness currencyBusiness,
-                                IMarketBusiness marketBus)
+                                IMarketBusiness marketBus,
+                                IBase_UserBusiness base_UserBusiness) : base(base_UserBusiness)
         {
             _coinBus = coinBus;
             _currencyBusiness = currencyBusiness;
-            _marketBus = marketBus;
-        }  
+            _marketBus = marketBus; 
+        } 
         #endregion
         /// <summary>
         /// Get available Fiat currencies
@@ -39,7 +45,9 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<IEnumerable<string>>> FiatCurrencies()
         {
-            return await _currencyBusiness.GetFiatCurrenciesAsync();
+            var response = await _currencyBusiness.GetFiatCurrenciesAsync();
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Get available Cryptocurrencies
@@ -48,7 +56,9 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<IEnumerable<string>>> CryptoCurrencies()
         {
-            return await _coinBus.GetCryptoCurrenciesAsync();
+            var response = await _coinBus.GetCryptoCurrenciesAsync();
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Get estimated price
@@ -59,7 +69,9 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<CurrencyEstimateViewDto>> Estimate(EstimateRequest request)
         {
-            return await _marketBus.EstimateAsync(request);
+            var response = await _marketBus.EstimateAsync(request);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Create payment
@@ -69,8 +81,10 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpPost]
         public async Task<AjaxResult<PaymentViewDto>> Payment(PaymentRequest request)
         {
-            var userId = string.Empty;
-            return await _marketBus.PaymentAsync(userId, request);
+            var userId = this.CurrentUser.Id;
+            var response = await _marketBus.PaymentAsync(userId, request);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Get payment status
@@ -81,8 +95,10 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<PaymentResultViewDto>> Payment(string paymentId)
         {
-            var userId = string.Empty;
-            return await _marketBus.PaymentAsync(userId, paymentId);
+            var userId = this.CurrentUser.Id;
+            var response = await _marketBus.PaymentAsync(userId, paymentId);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Get the minimum payment amount
@@ -93,8 +109,10 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<MinAmountViewDto>> MinAmount(string currency)
         {
-            var userId = string.Empty;
-            return await _marketBus.MinAmountAsync(userId, currency);
+            var userId = this.CurrentUser.Id;
+            var response = await _marketBus.MinAmountAsync(userId, currency);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Transfers Currency
@@ -104,8 +122,10 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpPost]
         public async Task<AjaxResult<TransfersViewDto>> Transfers(TransfersRequest request)
         {
-            var userId = string.Empty;
-            return await _marketBus.TransfersAsync(userId, request);
+            var userId = this.CurrentUser.Id;
+            var response = await _marketBus.TransfersAsync(userId, request);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
         /// <summary>
         /// Get Transfers status
@@ -116,8 +136,10 @@ namespace CCPP.PaymentAPI.Controllers
         [HttpGet]
         public async Task<AjaxResult<TransfersViewDto>> Transfers(string transfersId)
         {
-            var userId = string.Empty;
-            return await _marketBus.TransfersAsync(userId, transfersId);
+            var userId = this.CurrentUser.Id;
+            var response = await _marketBus.TransfersAsync(userId, transfersId);
+            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
+            return response;
         }
     }
 }

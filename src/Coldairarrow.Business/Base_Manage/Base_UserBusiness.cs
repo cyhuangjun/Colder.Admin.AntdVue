@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CacheManager.Core;
 using Coldairarrow.Business.Cache;
 using Coldairarrow.Entity;
 using Coldairarrow.Entity.Base_Manage;
@@ -17,16 +18,19 @@ namespace Coldairarrow.Business.Base_Manage
 {
     public class Base_UserBusiness : BaseBusiness<Base_User>, IBase_UserBusiness, ITransientDependency
     {
+        ICacheManager<object> _cache;
         readonly IOperator _operator;
         readonly IMapper _mapper;
         public Base_UserBusiness(
             IDbAccessor db,
             IBase_UserCache userCache,
             IOperator @operator,
+            ICacheManager<object> cache,
             IMapper mapper
             )
             : base(db)
         {
+            _cache = cache;
             _userCache = userCache;
             _operator = @operator;
             _mapper = mapper;
@@ -50,6 +54,7 @@ namespace Coldairarrow.Business.Base_Manage
                     from b in ab.DefaultIfEmpty()
                     select @select.Invoke(a, b);
 
+            q = q.WhereIf(!search.apiKey.IsNullOrEmpty(), x => x.ApiKey == search.apiKey);
             q = q.WhereIf(!search.userId.IsNullOrEmpty(), x => x.Id == search.userId);
             if (!search.keyword.IsNullOrEmpty())
             {
@@ -105,7 +110,7 @@ namespace Coldairarrow.Business.Base_Manage
             }
         }
 
-        [DataAddLog(UserLogType.系统用户管理, "RealName", "用户")]
+        [DataAddLog(UserLogType.SystemUserManagement, "RealName", "用户")]
         [DataRepeatValidate(
             new string[] { "UserName" },
             new string[] { "用户名" })]
@@ -116,7 +121,7 @@ namespace Coldairarrow.Business.Base_Manage
             await SetUserRoleAsync(input.Id, input.RoleIdList);
         }
 
-        [DataEditLog(UserLogType.系统用户管理, "RealName", "用户")]
+        [DataEditLog(UserLogType.SystemUserManagement, "RealName", "用户")]
         [DataRepeatValidate(
             new string[] { "UserName" },
             new string[] { "用户名" })]
@@ -131,7 +136,7 @@ namespace Coldairarrow.Business.Base_Manage
             await _userCache.UpdateCacheAsync(input.Id);
         }
 
-        [DataDeleteLog(UserLogType.系统用户管理, "RealName", "用户")]
+        [DataDeleteLog(UserLogType.SystemUserManagement, "RealName", "用户")]
         [Transactional]
         public async Task DeleteDataAsync(List<string> ids)
         {
@@ -143,6 +148,34 @@ namespace Coldairarrow.Business.Base_Manage
             await _userCache.UpdateCacheAsync(ids);
         }
 
+        public async Task<Base_UserDTO> GetUserByApiKeyAsync(string apiKey)
+        {  
+            if (apiKey.IsNullOrEmpty())
+                return null;
+            else
+            {
+                string cacheKey = $"Cache_APIKEY_{apiKey}";
+                if (this._cache.Exists(cacheKey))
+                {
+                    var cache = this._cache.Get(cacheKey).ChangeType<Base_UserDTO>();
+                    return await Task.FromResult(cache);
+                }
+                else
+                {
+                    PageInput<Base_UsersInputDTO> input = new PageInput<Base_UsersInputDTO>
+                    {
+                        Search = new Base_UsersInputDTO
+                        {
+                            all = true,
+                            apiKey = apiKey
+                        }
+                    };
+                    var result = (await GetDataListAsync(input)).Data.FirstOrDefault();
+                    this._cache.Add(cacheKey, result);
+                    return result;
+                }
+            }
+        }
         #endregion
 
         #region 私有成员
@@ -159,7 +192,7 @@ namespace Coldairarrow.Business.Base_Manage
             }).ToList();
             await Db.DeleteAsync<Base_UserRole>(x => x.UserId == userId);
             await Db.InsertAsync(userRoleList);
-        }
+        } 
 
         #endregion
     }

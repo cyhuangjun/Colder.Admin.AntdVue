@@ -49,5 +49,29 @@ namespace Coldairarrow.Util
         /// 超级管理员UserIId
         /// </summary>
         public const string ADMINID = "Admin";
+        /// <summary>
+        /// 支付API Http Head Name APIKEY
+        /// </summary>
+        public const string HTTPHEADAPIKEY = "X-CCPP-APIKEY";
+        /// <summary>
+        /// 支付API Http Head Name TIMESTAMP
+        /// </summary>
+        public const string HTTPHEADTIMESTAMP = "X-CCPP-TIMESTAMP";
+        /// <summary>
+        /// 支付API Http Head Name SIGNATURE
+        /// </summary>
+        public const string HTTPHEADSIGNATURE = "X-CCPP-SIGNATURE";
+        /// <summary>
+        /// 货币精度
+        /// </summary>
+        public const int CurrencyPrecision = 15;
+        /// <summary>
+        /// 数量精度
+        /// </summary>
+        public const int QuantityPercision = 15;
+        /// <summary>
+        /// 最大分页数
+        /// </summary>
+        public const int MaxPageSize = 500;
     }
 }

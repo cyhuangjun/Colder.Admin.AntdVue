@@ -1,6 +1,8 @@
 ﻿using Coldairarrow.Entity.Foundation;
 using Coldairarrow.Util;
+using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Foundation
@@ -17,5 +19,12 @@ namespace Coldairarrow.Business.Foundation
         Task<Coin> GetCoinByCodeAsync(string code);
 
         Task<decimal> GetFeeRate(string userId, string coinId);
+
+        Coin GetEntity(Expression<Func<Coin, bool>> expression);
+        Task<Coin> GetEntityAsync(Expression<Func<Coin, bool>> expression);
+        List<Coin> GetList(Expression<Func<Coin, bool>> expression);
+        Task<List<Coin>> GetListAsync(Expression<Func<Coin, bool>> expression);
+        List<Coin> GetList<TKey>(Expression<Func<Coin, bool>> expression, Expression<Func<Coin, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
+        Task<List<Coin>> GetListAsync<TKey>(Expression<Func<Coin, bool>> expression, Expression<Func<Coin, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
     }
 }

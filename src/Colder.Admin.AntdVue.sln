@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "03.Coldairarrow.IBusiness",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "08.CCPP.PaymentAPI", "CCPP.PaymentAPI\08.CCPP.PaymentAPI.csproj", "{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "07.CCPP.Cryptocurrency.Common", "CCPP.Cryptocurrency.Common\07.CCPP.Cryptocurrency.Common.csproj", "{09AE7778-C846-46AF-A8F6-58765DC72A1A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "07.CCPP.Cryptocurrency.Common", "CCPP.Cryptocurrency.Common\07.CCPP.Cryptocurrency.Common.csproj", "{09AE7778-C846-46AF-A8F6-58765DC72A1A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

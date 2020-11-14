@@ -9,5 +9,9 @@
         /// 返回数据
         /// </summary>
         public T Data { get; set; }
+        /// <summary>
+        /// 签名
+        /// </summary>
+        public string Mac { set; get; }
     }
 }

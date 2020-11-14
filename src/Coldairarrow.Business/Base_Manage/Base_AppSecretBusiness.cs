@@ -48,7 +48,7 @@ namespace Coldairarrow.Business.Base_Manage
 
         [DataRepeatValidate(new string[] { "AppId" },
             new string[] { "应用Id" })]
-        [DataAddLog(UserLogType.接口密钥管理, "AppId", "应用Id")]
+        [DataAddLog(UserLogType.InterfaceKeyManagement, "AppId", "应用Id")]
         public async Task AddDataAsync(Base_AppSecret newData)
         {
             await InsertAsync(newData);
@@ -56,13 +56,13 @@ namespace Coldairarrow.Business.Base_Manage
 
         [DataRepeatValidate(new string[] { "AppId" },
             new string[] { "应用Id" })]
-        [DataEditLog(UserLogType.接口密钥管理, "AppId", "应用Id")]
+        [DataEditLog(UserLogType.InterfaceKeyManagement, "AppId", "应用Id")]
         public async Task UpdateDataAsync(Base_AppSecret theData)
         {
             await UpdateAsync(theData);
         }
 
-        [DataDeleteLog(UserLogType.接口密钥管理, "AppId", "应用Id")]
+        [DataDeleteLog(UserLogType.InterfaceKeyManagement, "AppId", "应用Id")]
         public async Task DeleteDataAsync(List<string> ids)
         {
             await DeleteAsync(ids);
