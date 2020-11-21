@@ -3,11 +3,16 @@ using CCPP.Cryptocurrency.Common;
 using Coldairarrow.Business.Foundation;
 using Coldairarrow.Business.Transaction;
 using Coldairarrow.Entity.Enum;
+using Coldairarrow.Entity.Foundation;
+using Coldairarrow.Entity.Request;
+using Coldairarrow.Entity.Transaction;
 using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Scheduler.Core;
 using Coldairarrow.Util;
+using Coldairarrow.Util.Helper;
 using Exceptionless;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Quartz;
 using System;
 using System.Collections.Generic;
@@ -34,6 +39,9 @@ namespace Coldairarrow.Scheduler.Job
         private readonly ICacheDataBusiness _cacheDataBusiness;
         private readonly ICoinTransactionInBusiness _coinTransactionInBusiness;
         private readonly ICryptocurrencyBusiness _cryptocurrencyBusiness;
+        private readonly ISysWalletBusiness _sysWalletBusiness;
+        private readonly IWalletBusiness _walletBusiness;
+        private readonly IEvaluateMinefeeRateBusiness _evaluateMinefeeRateBusiness;
         #endregion
 
         public MoveToSysWalletJob()
@@ -43,6 +51,9 @@ namespace Coldairarrow.Scheduler.Job
             this._cacheDataBusiness = this._container.Resolve<ICacheDataBusiness>();
             this._coinTransactionInBusiness = this._container.Resolve<ICoinTransactionInBusiness>();
             this._cryptocurrencyBusiness = this._container.Resolve<ICryptocurrencyBusiness>();
+            this._sysWalletBusiness = this._container.Resolve<ISysWalletBusiness>();
+            this._walletBusiness = this._container.Resolve<IWalletBusiness>();
+            this._evaluateMinefeeRateBusiness = this._container.Resolve<IEvaluateMinefeeRateBusiness>();
         }
 
         public Task Execute(IJobExecutionContext context)
@@ -80,315 +91,425 @@ namespace Coldairarrow.Scheduler.Job
 
         private async Task MoveToSysWallet()
         {
-            var coins = (await this._cacheDataBusiness.GetCoinsAsync()).Where(e=>e.IsUseSysAccount && e.IsSupportWallet);
-
-            var datas = _coinTransactionSyncInFeeRepository.Table.Where(f => (f.Status == CoinTransactionSyncInStatus.WaitConfirm || f.Status == CoinTransactionSyncInStatus.WaitSync))
-                .OrderBy(f => f.LastUpdateTime).Take(ConstDefine.MaxPageSize).ToList();
-            if (!datas.Any())
+            var coins = (await this._cacheDataBusiness.GetCoinsAsync()).Where(e => e.IsUseSysAccount && e.IsSupportWallet);
+            var transactions = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.ArrivedAccount && e.MoveStatus != MoveStatus.Finish && e.MoveStatus != MoveStatus.Invalid);
+            var transactionsGroupCoins = transactions.GroupBy(e => e.CoinID);
+            foreach (var transactionsGroupCoin in transactionsGroupCoins)
             {
-                return;
-            }
-
-            var coinIds = datas.Select(f => f.CoinID).Distinct().ToList();
-            var coinList = _coinRepository.GetList(f => f.IsSupportWallet);
-            var tokenCoinIds = coinList.Where(f => !string.IsNullOrEmpty(f.TokenCoinID)).Select(f => f.TokenCoinID).Distinct().ToList();
-            coinIds.AddRange(tokenCoinIds);
-            var addressList = datas.Where(f => coinIds.Contains(f.CoinID)).Select(f => f.FromAddress).ToList();
-            var userIDList = datas.Select(f => f.UserID).Distinct().ToList();
-            var customerWalletList = _customerWalletRepository.GetList(f => coinIds.Contains(f.CoinID) && userIDList.Contains(f.UserID));
-            var sysWalletList = _sysWalletRepository.Table.AsNoTracking().Where(f => f.IsEnable && coinIds.Contains(f.CoinID)).ToList();
-            var transactionIDList = datas.Select(f => f.TXID).Distinct().ToList();
-            var transactionList = _coinTransactionInRepository.Table.AsNoTracking().Where(f => transactionIDList.Contains(f.TXID)).ToList();
-            var groupTransactions = datas.GroupBy(f => f.CoinID);
-            var newTransactionFees = new List<CoinTransactionFee>();
-            var newSysWalletLogs = new List<SysWalletLog>();
-            foreach (var item in groupTransactions)
-            {
-                var coin = coinList.Find(f => f.ID == item.Key);
+                var coin = await this._cacheDataBusiness.GetCoinAsync(transactionsGroupCoin.Key);
                 if (coin == null)
                 {
+                    foreach (var item in transactionsGroupCoin)
+                    {
+                        item.MoveStatus = MoveStatus.Invalid;
+                    }
+                    await this._coinTransactionInBusiness.UpdateDataAsync(transactionsGroupCoin.ToList());
                     continue;
                 }
-                string sysCoinID = item.Key;
+                if (!coin.IsUseSysAccount)
+                {
+                    foreach (var item in transactionsGroupCoin)
+                    {
+                        item.MoveStatus = MoveStatus.Finish;
+                    }
+                    await this._coinTransactionInBusiness.UpdateDataAsync(transactionsGroupCoin.ToList());
+                    continue;
+                }
+                if (!coin.IsSupportWallet)
+                    continue;
+                string sysCoinID = transactionsGroupCoin.Key;
                 if (!string.IsNullOrEmpty(coin.TokenCoinID))
                 {
                     sysCoinID = coin.TokenCoinID;
                 }
-                var sysWallets = sysWalletList.Where(f => f.CoinID == sysCoinID).OrderBy(f => f.CreateTime).ToList();
-                if (!sysWallets.Any())
+                var sysWallet = await this._sysWalletBusiness.GetEntityAsync(e => e.CoinID == sysCoinID && !e.Deleted && e.Enabled);
+                if (sysWallet == null)
                 {
                     continue;
                 }
-                var providerType = (ProviderType)coin.ProviderType;
-                var coinProvider = VirtualCoinDomain.GetCoinProvider(coin);
-                var sysWallet = sysWallets.First();
-                foreach (var tx in item)
+                var cryptocurrencyProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+                var transactionsGroupAddress = transactionsGroupCoin.GroupBy(e => e.Address);
+                foreach (var txAddressG in transactionsGroupAddress)
                 {
-                    tx.LastUpdateTime = DateTime.Now;
                     try
                     {
-                        if (tx.Status == CoinTransactionSyncInStatus.WaitConfirm)
+                        switch (txAddressG.First().MoveStatus)
                         {
-                            #region 处理待确认的记录信息
-                            if (string.IsNullOrEmpty(tx.MoveTXID))
-                            {
-                                continue;
-
-                            }
-                            if (coinProvider.HasTransactionReceipt)
-                            {
-                                var result = coinProvider.GetTransactionReceipt(tx.MoveTXID);
-                                if (result.Result != null)
-                                {
-                                    if (result.Result.IsSuccess)
-                                    {
-                                        tx.Status = CoinTransactionSyncInStatus.Confirm;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                var transactionInfo = coinProvider.GetTransaction(tx.MoveTXID);
-                                if (transactionInfo.Result != null)
-                                {
-                                    if (coinProvider.HasNotBlockCount)
-                                    {
-                                        if (transactionInfo.Result.Valid)
-                                        {
-                                            tx.Status = CoinTransactionSyncInStatus.Confirm;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (transactionInfo.Result.Confirmations >= coin.MinConfirms)
-                                        {
-                                            tx.Status = CoinTransactionSyncInStatus.Confirm;
-
-                                        }
-                                    }
-
-                                }
-                            }
-                            #endregion
-                        }
-                        else if (tx.Status == CoinTransactionSyncInStatus.WaitSync)
-                        {
-                            //找到当前用户的钱包信息
-                            CustomerWallet customerWallet = null;
-                            if (coinProvider.IsAddressOnce)
-                            {
-                                customerWallet = customerWalletList.FirstOrDefault(f => f.UserID == tx.UserID && f.CoinID == sysCoinID);
-                            }
-                            else
-                            {
-                                customerWallet = customerWalletList.FirstOrDefault(f => f.Address == tx.FromAddress && f.UserID == tx.UserID && f.CoinID == sysCoinID);
-                            }
-                            decimal moveAmount = tx.Amount;
-                            if (customerWallet != null)
-                            {
-                                string securityKey = customerWallet.SecurityKey;
-                                if (!string.IsNullOrEmpty(securityKey) && customerWallet.IsEncryption == true)
-                                {
-                                    securityKey = CustomerWalletEncryptionDomain.Decode(securityKey, customerWallet.UserID);
-                                }
-
-                                var estimateGasData = new EstimateGasData
-                                {
-                                    From = customerWallet.Address,
-                                    To = sysWallet.Address,
-                                    Price = 0,
-                                    TokenAddress = coin.TokenCoinAddress,
-                                    WalletSupplyAmount = coin.WalletSupplyAmount,
-                                    Amount = tx.Amount
-                                };
-                                string seed = string.Empty;
-                                if (!string.IsNullOrEmpty(customerWallet.Seed))
-                                {
-                                    seed = CustomerWalletEncryptionDomain.Decode(customerWallet.Seed, customerWallet.UserID);
-                                }
-                                var balanceData = new BalanceData
-                                {
-                                    Address = customerWallet.Address,
-                                    Seed = seed
-                                };
-                                if (coinProvider.IsAddressOnce)
-                                {
-                                    var addressLogs = _customerWalletLogRepository.Table.AsNoTracking().Where(f => f.CoinID == customerWallet.CoinID && f.UserID == customerWallet.UserID).OrderByDescending(f => f.CreateTime).Select(f => f.Address).Distinct().Take(500).ToList();
-                                    if (addressLogs != null && addressLogs.Any())
-                                    {
-                                        balanceData.Address = string.Join(',', addressLogs);
-                                    }
-                                }
-                                var balanceResult = coinProvider.GetBalance(balanceData);
-                                if (balanceResult.Result < tx.Amount)
-                                {
-                                    continue;
-                                }
-                                var estimateGasResult = coinProvider.EstimateGas(estimateGasData);
-                                if (!string.IsNullOrEmpty(estimateGasResult.Error))
-                                {
-                                    continue;
-                                }
-                                //花费的费用
-                                var estimateGasInfo = estimateGasResult.Result;
-
-                                if (!string.IsNullOrEmpty(coin.RelationCoinID))
-                                {
-                                    moveAmount = tx.Amount;
-                                }
-                                else
-                                {
-                                    moveAmount = tx.Amount - estimateGasInfo.NeedAmount;
-                                }
-
-                                if (coinProvider.IsNeedRegisterAccount)
-                                {
-                                    //注册钱包地址
-                                    if (!customerWallet.IsRegisterAddress.HasValue || !customerWallet.IsRegisterAddress.Value)
-                                    {
-                                        var registerResult = coinProvider.RegisterAccount(customerWallet.Address);
-                                        if (registerResult != null && registerResult.Result != null)
-                                        {
-                                            var registerAccount = registerResult.Result;
-                                            var registerAddressFee = new CoinTransactionFee
-                                            {
-                                                CoinID = coin.ID,
-                                                ID = Guid.NewGuid().GuidTo16String(),
-                                                MinerCoinID = coin.ID,
-                                                CreateTime = DateTime.Now,
-                                                TXID = registerAccount.TX,
-                                                MinerFee = registerAccount.Fee,
-                                                CreatorID = ConstDefine.SupperUserId,
-                                                Status = CoinTransactionFeeStatus.SyncFinish,
-                                                TransactionType = CoinTransactionType.RegisterAddress,
-                                                UserID = tx.UserID,
-                                                ExtraTaxFee = coin.ExtraTaxFee ?? 0
-                                            };
-                                            newTransactionFees.Add(registerAddressFee);
-                                            customerWallet.IsRegisterAddress = true;
-                                        }
-                                    }
-                                }
-                                string sysAddress = string.Empty;
-
-                                //地址只能使用一次
-                                if (coinProvider.IsAddressOnce)
-                                {
-                                    #region
-                                    string sysSeed = string.Empty;
-                                    if (!string.IsNullOrEmpty(sysWallet.Seed))
-                                    {
-                                        sysSeed = CustomerWalletEncryptionDomain.Decode(sysWallet.Seed, sysWallet.Address);
-                                    }
-                                    var newSysAddress = coinProvider.AddWalletAddress(new AddAddressInfo
-                                    {
-                                        IsActive = true,
-                                        Seed = sysSeed
-                                    }).Result;
-                                    var sysWalletLog = new SysWalletLog
-                                    {
-                                        ID = Guid.NewGuid().GuidTo16String(),
-                                        Address = newSysAddress.Address,
-                                        CoinID = coin.ID,
-                                        CreateTime = DateTime.Now,
-                                        CreatorID = ConstDefine.SupperUserId,
-                                        IsEnable = false
-                                    };
-                                    if (!string.IsNullOrEmpty(newSysAddress.PrivateKey))
-                                    {
-                                        sysWalletLog.PrivateKey = CustomerWalletEncryptionDomain.Encode(newSysAddress.PrivateKey, newSysAddress.Address);
-                                    }
-                                    if (!string.IsNullOrEmpty(newSysAddress.PublicKey))
-                                    {
-                                        sysWalletLog.PublicKey = CustomerWalletEncryptionDomain.Encode(newSysAddress.PublicKey, newSysAddress.Address);
-                                    }
-                                    sysAddress = sysWalletLog.Address;
-                                    newSysWalletLogs.Add(sysWalletLog);
-                                    #endregion
-                                }
-                                else
-                                {
-                                    sysAddress = sysWallet.Address;
-                                }
-                                var sendCoinInfo = new SendCoinInfo
-                                {
-                                    Coin = Mapper.Map<Coin, CoinDTO>(coin),
-                                    Quantity = moveAmount,
-                                    ToAddress = sysAddress,
-                                    SysWalletEstimateGas = new DTO.C2C.SysWalletEstimateGasInfoDTO
-                                    {
-                                        EstimateGas = estimateGasInfo.EstimateGas,
-                                        GasPrice = estimateGasInfo.GasPrice,
-                                        SysWallet = sysWallet
-                                    }
-                                };
-                                var moveTXID = _virtualCoinDomain.SendCoinToSys(sendCoinInfo, customerWallet)?.Data;
-                                if (!string.IsNullOrEmpty(moveTXID))
-                                {
-                                    var txInfo = transactionList.FirstOrDefault(f => f.TXID == tx.TXID && f.CoinID == tx.CoinID && f.UserID == tx.UserID);
-                                    if (txInfo != null)
-                                    {
-                                        string minerCoinID = string.IsNullOrEmpty(coin.RelationCoinID) ? txInfo.CoinID : coin.RelationCoinID;
-                                        CoinTransactionFee coinTransactionFee = new CoinTransactionFee
-                                        {
-                                            Amount = txInfo.Amount,
-                                            CoinID = txInfo.CoinID,
-                                            UserID = txInfo.UserID,
-                                            TXID = txInfo.TXID,
-                                            MinerCoinID = minerCoinID,
-                                            CreateTime = DateTime.Now,
-                                            CreatorID = ConstDefine.SupperUserId,
-                                            ID = Guid.NewGuid().GuidTo16String(),
-                                            TransactionType = CoinTransactionType.UserToSys,
-                                            PlatformFee = txInfo.Fee ?? 0,
-                                            MoveTXID = moveTXID,
-                                            MoveSystemAddress = sysWallet.Address,
-                                            MoveAmount = moveAmount,
-                                            Status = CoinTransactionFeeStatus.WaitConfirm,
-                                            ExtraTaxFee = coin.ExtraTaxFee ?? 0,
-                                            WebSiteID = txInfo.WebSiteID
-                                        };
-                                        newTransactionFees.Add(coinTransactionFee);
-                                    }
-                                    tx.MoveTXID = moveTXID;
-                                    tx.ToAddress = sysWallet.Address;
-                                    tx.Status = CoinTransactionSyncInStatus.WaitConfirm;
-                                }
-
-                            }
+                            case MoveStatus.WaitMoveToSys:
+                                await HandleWaitMoveToSys(txAddressG, cryptocurrencyProvider, sysWallet, coin);
+                                break;
+                            case MoveStatus.MoveSysWaitConfirm:
+                                await HandleMoveSysWaitConfirm(txAddressG, cryptocurrencyProvider, coin);
+                                break;
+                            case MoveStatus.WaitMoveToUser:
+                                await HandleWaitMoveToUser(txAddressG, cryptocurrencyProvider, sysWallet, coin);
+                                break;
+                            case MoveStatus.MoveUserWaitConfirm:
+                                await HandleMoveUserWaitConfirm(txAddressG, cryptocurrencyProvider, coin);
+                                break;
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception e)
                     {
-                        if (tx.LastUpdateTime.HasValue && (tx.LastUpdateTime.Value - tx.CreateTime).TotalHours > 24)
-                        {
-                            tx.Status = CoinTransactionSyncInStatus.Invalid;
-                        }
-                        Console.WriteLine($"err:{JsonConvert.SerializeObject(ex)}");
-                        Task.Factory.StartNew(() =>
-                        {
-                            ex.ToExceptionless().Submit();
-                        });
-
+                        this._logger.LogError(e, $"移动充币到系统地址错误,TransactionInID:{string.Join(",", txAddressG.Select(e => e.ID))}");
+                        e.ToExceptionless().Submit();
                     }
-
                 }
             }
-            if (newTransactionFees.Any())
+        }
+
+        private async Task HandleMoveUserWaitConfirm(IGrouping<string, CoinTransactionIn> txAddressG, ICryptocurrencyProvider cryptocurrencyProvider, Coin coin)
+        {
+            foreach (var tx in txAddressG)
+                await HandleMoveUserWaitConfirm(tx, cryptocurrencyProvider, coin);
+        }
+
+        private async Task HandleMoveUserWaitConfirm(CoinTransactionIn tx, ICryptocurrencyProvider cryptocurrencyProvider, Coin coin)
+        {
+            if (string.IsNullOrEmpty(tx.SysToUserTXID))
             {
-                this._coinTransactionFeeRepository.Add(newTransactionFees, false);
+                tx.LastUpdateTime = DateTime.Now;
+                tx.MoveStatus = MoveStatus.Invalid;
+                await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                return;
             }
-            this._coinTransactionSyncInFeeRepository.Update(datas, false);
-            this._coinTransactionSyncInFeeRepository.SaveChanges(false);
-            if (newSysWalletLogs != null && newSysWalletLogs.Any())
+            if (cryptocurrencyProvider.HasTransactionReceipt)
             {
-                this._sysWalletLogRepository.Add(newSysWalletLogs, false);
+                var result = cryptocurrencyProvider.GetTransactionReceipt(tx.SysToUserTXID);
+                if (result?.Result?.IsSuccess ?? false)
+                {
+                    tx.LastUpdateTime = DateTime.Now;
+                    tx.MoveUserMinefee = GetMinefee(cryptocurrencyProvider, tx.SysToUserTXID);
+                    tx.MoveStatus = MoveStatus.WaitMoveToSys;
+                    await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                }
             }
-            if (customerWalletList != null && customerWalletList.Any())
+            else
             {
-                this._customerWalletRepository.Update(customerWalletList, false);
+                var transactionInfo = cryptocurrencyProvider.GetTransaction(tx.SysToUserTXID);
+                if (transactionInfo.Result != null)
+                {
+                    if (cryptocurrencyProvider.HasNotBlockCount)
+                    {
+                        if (transactionInfo.Result.Valid)
+                        {
+                            tx.LastUpdateTime = DateTime.Now;
+                            tx.MoveUserMinefee = GetMinefee(cryptocurrencyProvider, tx.SysToUserTXID);
+                            tx.MoveStatus = MoveStatus.WaitMoveToSys;
+                            await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                        }
+                    }
+                    else
+                    {
+                        if (transactionInfo.Result.Confirmations >= coin.MinConfirms)
+                        {
+                            tx.LastUpdateTime = DateTime.Now;
+                            tx.MoveUserMinefee = GetMinefee(cryptocurrencyProvider, tx.SysToUserTXID);
+                            tx.MoveStatus = MoveStatus.WaitMoveToSys;
+                            await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                        }
+                    }
+                }
             }
-            this._customerWalletRepository.SaveChanges(false);
+        }
+
+        private async Task HandleWaitMoveToUser(IGrouping<string, CoinTransactionIn> txAddressG, ICryptocurrencyProvider cryptocurrencyProvider, SysWallet sysWallet, Coin tokenCoin)
+        {
+            var userAddress = txAddressG.Key;
+            var coin = await this._cacheDataBusiness.GetCoinAsync(tokenCoin.TokenCoinID);
+            var orgCoinProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+            EstimateGasInfo estimateGasInfo = null;
+            var balanceData = new BalanceData
+            {
+                Address = userAddress
+            };
+            //先判断用户钱包有没有矿工费,如果有的话就不需要从系统钱包调
+            var balanceResult = orgCoinProvider.GetBalance(balanceData); 
+            estimateGasInfo = (await EstimateGas(tokenCoin, userAddress, sysWallet.Address, txAddressG.Sum(e => e.Amount))).Result;
+            if (balanceResult.Result > 0)
+            { 
+                if (balanceResult.Result >= estimateGasInfo.NeedAmount)
+                {
+                    foreach (var tx in txAddressG)
+                    {
+                        tx.MoveStatus = MoveStatus.WaitMoveToSys;
+                        tx.LastUpdateTime = DateTime.Now;
+                    }
+                    await this._coinTransactionInBusiness.UpdateDataAsync(txAddressG.ToList());
+                    return;
+                }   
+            }
+            var totalAmount = estimateGasInfo.NeedAmount * 2; 
+            var sendCoinInfo = new SendCoinInfo
+            {
+                Coin = coin,
+                Quantity = totalAmount,
+                ToAddress = userAddress,
+                EstimateGas = estimateGasInfo.EstimateGas,
+                GasPrice = estimateGasInfo.GasPrice                
+            };
+            var result = await this._cryptocurrencyBusiness.SendCoinToCustomer(sendCoinInfo, sysWallet);
+            if (string.IsNullOrEmpty(result.Error))
+            { 
+                foreach (var tx in txAddressG)
+                {
+                    tx.MinefeeCoinID = tokenCoin.TokenCoinID;
+                    tx.SysToUserTXID = result.Result;
+                    tx.ReserveMinerfees = totalAmount;
+                    tx.MoveStatus = MoveStatus.MoveUserWaitConfirm;
+                    tx.LastUpdateTime = DateTime.Now;
+                }
+                await this._coinTransactionInBusiness.UpdateDataAsync(txAddressG.ToList());
+            }
+        }
+
+        private async Task HandleWaitMoveToSys(IGrouping<string, CoinTransactionIn> txAddressGroup, ICryptocurrencyProvider cryptocurrencyProvider, SysWallet sysWallet, Coin coin)
+        {
+            if (!string.IsNullOrEmpty(coin.TokenCoinID))
+            {
+                await HandleWaitMoveTokenToSys(txAddressGroup, sysWallet, coin);
+                return;
+            }
+            var userAddress = txAddressGroup.Key;
+            var customerWallet = await this._walletBusiness.GetEntityAsync(e => e.Address == userAddress && e.CoinID == sysWallet.CoinID);
+            decimal moveAmount = txAddressGroup.Sum(e => e.Amount);
+            if (customerWallet != null)
+            {
+                string securityKey = customerWallet.SecurityKey;
+                if (!string.IsNullOrEmpty(securityKey))
+                    securityKey = EncryptionHelper.Decode(securityKey, customerWallet.UserID);
+                var estimateGasData = new EstimateGasData
+                {
+                    From = customerWallet.Address,
+                    To = sysWallet.Address,
+                    Price = 0,
+                    TokenAddress = coin.TokenCoinAddress,
+                    Amount = moveAmount
+                };
+                var balanceData = new BalanceData
+                {
+                    Address = customerWallet.Address
+                };
+                var balanceResult = cryptocurrencyProvider.GetBalance(balanceData);
+                if (balanceResult.Result < moveAmount)
+                {
+                    foreach (var tx in txAddressGroup)
+                    {
+                        tx.MoveStatus = MoveStatus.Invalid;
+                        tx.LastUpdateTime = DateTime.Now;
+                    }
+                    await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
+                    return;
+                }
+                var estimateGasResult = cryptocurrencyProvider.EstimateGas(estimateGasData);
+                if (!string.IsNullOrEmpty(estimateGasResult.Error))
+                {
+                    var exception = new Exception($"Gas评估错误,{estimateGasResult.Error}");
+                    this._logger.LogError(exception, exception.Message);
+                    exception.ToExceptionless().Submit();
+                    return;
+                }
+                moveAmount = moveAmount - estimateGasResult.Result.NeedAmount;
+                string sysAddress = sysWallet.Address;
+                var sendCoinInfo = new SendCoinInfo
+                {
+                    Coin = coin,
+                    Quantity = moveAmount,
+                    ToAddress = sysAddress,
+                    EstimateGas = estimateGasResult.Result.EstimateGas,
+                    GasPrice = estimateGasResult.Result.GasPrice
+                };
+                var moveTXID = (await this._cryptocurrencyBusiness.SendCoinToSys(sendCoinInfo, customerWallet)).Result;
+                if (!string.IsNullOrEmpty(moveTXID))
+                {
+                    foreach (var tx in txAddressGroup)
+                    {
+                        tx.LastUpdateTime = DateTime.Now;
+                        tx.UserToSysTXID = moveTXID;
+                        tx.MoveToAddress = sysWallet.Address;
+                        tx.MoveStatus = MoveStatus.MoveSysWaitConfirm;
+                        tx.MoveAmount = moveAmount;
+                        tx.MoveTime = DateTime.Now;
+                        tx.MinefeeCoinID = coin.Id;
+                        tx.MoveToAddress = sysAddress;
+                    }
+                }
+                await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
+            }
+        }
+
+        private async Task HandleWaitMoveTokenToSys(IGrouping<string, CoinTransactionIn> txAddressGroup, SysWallet sysWallet, Coin tokenCoin)
+        {
+            var coin = await this._cacheDataBusiness.GetCoinAsync(tokenCoin.TokenCoinID);
+            var provider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+            var tokenProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(tokenCoin);
+            var totalTokenAmount = txAddressGroup.Sum(e => e.Amount);
+            var userAddress = txAddressGroup.Key;
+            var estimateGasResult = await EstimateGas(tokenCoin, userAddress, sysWallet.Address, totalTokenAmount);
+            if (!string.IsNullOrEmpty(estimateGasResult.Error))
+            {
+                return;
+            }
+            var balanceData = new BalanceData
+            {
+                Address = userAddress
+            };
+            var balance = provider.GetBalance(balanceData);
+            var needAmount = estimateGasResult.Result.NeedAmount;
+            if (balance.Result < (needAmount))
+            {
+                foreach (var tx in txAddressGroup)
+                {
+                    tx.MoveStatus = MoveStatus.WaitMoveToUser;
+                    tx.LastUpdateTime = DateTime.Now;
+                }
+                await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
+                return;
+            }
+            var ethTokenProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(tokenCoin);
+            var balanceResult = ethTokenProvider.GetBalance(new BalanceData
+            {
+                Address = userAddress,
+                TokenContractAddress = tokenCoin.TokenCoinAddress
+            });
+            if (balanceResult.Result < totalTokenAmount)
+            {
+                var exception = new Exception($"未能到账用户地址{userAddress},Coin Code:{tokenCoin.Code},地址余额:{balanceResult.Result},转币量:{totalTokenAmount}");
+                this._logger.LogError(exception, exception.Message);
+                ExceptionlessClient.Default.CreateException(exception).Submit();
+            }
+            totalTokenAmount = balanceResult.Result;
+            var sendCoinInfo = new SendCoinInfo
+            {
+                Coin = tokenCoin,
+                ParentCoin = coin,
+                Quantity = totalTokenAmount,
+                ToAddress = sysWallet.Address,
+                EstimateGas = 200000m,
+                GasPrice = estimateGasResult.Result.GasPrice
+            };
+            var customerWallet = await this._walletBusiness.GetEntityAsync(e => e.Address == userAddress);
+            if (customerWallet == null) return;
+            var sendResult = await this._cryptocurrencyBusiness.SendCoinToSys(sendCoinInfo, customerWallet);
+            if (string.IsNullOrEmpty(sendResult.Error))
+            {
+                var moveTXID = sendResult.Result;
+                foreach (var tx in txAddressGroup)
+                {
+                    tx.LastUpdateTime = DateTime.Now;
+                    tx.UserToSysTXID = moveTXID;
+                    tx.MoveToAddress = sysWallet.Address;
+                    tx.MoveStatus = MoveStatus.MoveSysWaitConfirm;
+                    tx.MoveAmount = totalTokenAmount;
+                    tx.MoveTime = DateTime.Now;
+                    tx.MinefeeCoinID = coin.Id;
+                }
+                await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
+            }
+            else
+            {
+                var exception = new Exception($"代币发送结果信息Address:{userAddress},发送结果:{JsonConvert.SerializeObject(sendResult)}");
+                this._logger.LogError(exception, exception.Message);
+                Exceptionless.ExceptionlessClient.Default.CreateException(exception).Submit();
+            }
+        }
+
+        private async Task HandleMoveSysWaitConfirm(IGrouping<string, CoinTransactionIn> txAddressGroup, ICryptocurrencyProvider cryptocurrencyProvider, Coin coin)
+        {
+            foreach (var tx in txAddressGroup)
+                await HandleMoveSysWaitConfirm(tx, cryptocurrencyProvider, coin);
+        }
+
+        private async Task HandleMoveSysWaitConfirm(CoinTransactionIn tx, ICryptocurrencyProvider cryptocurrencyProvider, Coin coin)
+        {
+            if (string.IsNullOrEmpty(tx.UserToSysTXID))
+            {
+                tx.LastUpdateTime = DateTime.Now;
+                tx.MoveStatus = MoveStatus.Invalid;
+                await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                return;
+            }
+            if (cryptocurrencyProvider.HasTransactionReceipt)
+            {
+                var result = cryptocurrencyProvider.GetTransactionReceipt(tx.UserToSysTXID);
+                if (result?.Result?.IsSuccess ?? false)
+                {
+                    tx.LastUpdateTime = DateTime.Now;
+                    tx.MoveSysMinefee = GetMinefee(cryptocurrencyProvider, tx.UserToSysTXID);
+                    tx.MoveStatus = MoveStatus.Finish;
+                    await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                }
+            }
+            else
+            {
+                var transactionInfo = cryptocurrencyProvider.GetTransaction(tx.UserToSysTXID);
+                if (transactionInfo.Result != null)
+                {
+                    if (cryptocurrencyProvider.HasNotBlockCount)
+                    {
+                        if (transactionInfo.Result.Valid)
+                        {
+                            tx.LastUpdateTime = DateTime.Now;
+                            tx.MoveSysMinefee = GetMinefee(cryptocurrencyProvider, tx.UserToSysTXID);
+                            tx.MoveStatus = MoveStatus.Finish;
+                            await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                        }
+                    }
+                    else
+                    {
+                        if (transactionInfo.Result.Confirmations >= coin.MinConfirms)
+                        {
+                            tx.LastUpdateTime = DateTime.Now;
+                            tx.MoveSysMinefee = GetMinefee(cryptocurrencyProvider, tx.UserToSysTXID);
+                            tx.MoveStatus = MoveStatus.Finish;
+                            await this._coinTransactionInBusiness.UpdateDataAsync(tx);
+                        }
+                    }
+                }
+            }
+        }
+
+        private decimal GetMinefee(ICryptocurrencyProvider cryptocurrencyProvider, string txId)
+        {
+            var transactionResult = cryptocurrencyProvider.GetTransactionFee(txId, 1);
+            if (string.IsNullOrEmpty(transactionResult.Error) && transactionResult.Result != -1)
+            {
+                decimal fee = Math.Abs(transactionResult.Result);
+                return fee;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// 评估矿工费
+        /// </summary>
+        /// <param name="coin">虚拟币</param>
+        /// <param name="from">发送地址</param>
+        /// <param name="to">接收地址</param>
+        /// <param name="amount">发送金额</param>
+        /// <returns></returns>
+        private async Task<ResponseData<EstimateGasInfo>> EstimateGas(Coin coin, string from, string to, decimal amount)
+        {
+            var estimateGasData = new EstimateGasData
+            {
+                From = from,
+                To = to,
+                Amount = amount,
+                Price = 0,
+                TokenAddress = coin.TokenCoinAddress 
+            };
+            var provider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+
+            switch (coin.ProviderType)
+            { 
+                case ProviderType.ETH:
+                case ProviderType.ETHTokenCoin:
+                    var gasPriceResult = this._evaluateMinefeeRateBusiness.GetETHGasPrice();
+                    estimateGasData.Price = gasPriceResult.Recommend;
+                    break;
+            }
+            var estimateGasResult = provider.EstimateGas(estimateGasData);
+            return estimateGasResult;
         }
     }
 }

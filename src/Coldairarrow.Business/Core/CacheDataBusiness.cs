@@ -37,5 +37,19 @@ namespace Coldairarrow.Business.Core
                 this._cache.Add(cacheKey, result);
             return result;
         }
+
+        public async Task<Coin> GetCoinAsync(string coinId)
+        {
+            string cacheKey = $"Cache_{GetType().FullName}_GetCoin_{coinId}_";
+            if (this._cache.Exists(cacheKey))
+            {
+                var cache = this._cache.Get(cacheKey).ChangeType<Coin>();
+                return await Task.FromResult(cache);
+            }
+            var result = await this._db.GetIQueryable<Coin>().Where(e => e.Id == coinId).FirstOrDefaultAsync();
+            if (result != null)
+                this._cache.Add(cacheKey, result);
+            return result;
+        }
     }
 }

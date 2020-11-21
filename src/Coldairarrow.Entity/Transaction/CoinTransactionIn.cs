@@ -90,5 +90,34 @@ namespace Coldairarrow.Entity.Transaction
         public String FromAddress { get; set; }
 
         public string SysToUserTXID { set; get; }
+
+        public string UserToSysTXID { set; get; }
+
+        [Column(TypeName = "decimal(28, 16)")]
+        public string MoveToAddress { set; get; }
+
+        public decimal MoveAmount { set; get; }
+
+        public DateTime? MoveTime { set; get; }
+
+        public string MinefeeCoinID { set; get; }
+
+        /// <summary>
+        /// 消耗矿工费
+        /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
+        public decimal MoveUserMinefee { set; get; }
+        /// <summary>
+        /// 消耗矿工费
+        /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
+        public decimal MoveSysMinefee { set; get; }
+        /// <summary>
+        /// 预留矿工费
+        /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
+        public decimal ReserveMinerfees { set; get; } 
+
+        public MoveStatus MoveStatus { set; get; }
     }
 }

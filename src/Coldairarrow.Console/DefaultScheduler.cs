@@ -38,7 +38,7 @@ namespace Coldairarrow.Scheduler
             CreateJob<ConfirmTransactionSynchronizationJob>("ConfirmTransactionSynchronizationJob", settings.ConfirmTransactionSynchronizationCronExpression);
             CreateJob<ContractTransactionJob>("ContractTransactionJob", settings.ContractTransactionExpression);
             CreateJob<WithdrawalSynchronizationJob>("WithdrawalSynchronizationJob", settings.WithdrawalSynchronizationCronExpression);
-            CreateJob<MoveCoinJob>("_CoinTransactionMoveToSysJob", settings.MoveToSysWalletJobCronExpression);
+            CreateJob<MoveToSysWalletJob>("_CoinTransactionMoveToSysJob", settings.MoveToSysWalletJobCronExpression);
 
 
             //CreateJob<VGPayJob>("_VGPayJob_", settings.VGPayJobExpression);
