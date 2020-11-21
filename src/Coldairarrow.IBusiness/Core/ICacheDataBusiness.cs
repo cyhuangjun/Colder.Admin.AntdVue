@@ -9,5 +9,6 @@ namespace Coldairarrow.IBusiness.Core
     public interface ICacheDataBusiness
     {
         Task<List<Coin>> GetCoinsAsync();
+        Task<Coin> GetCoinAsync(string coinId);
     }
 }
