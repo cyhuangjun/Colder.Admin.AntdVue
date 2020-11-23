@@ -77,7 +77,11 @@ namespace Coldairarrow.Entity.Foundation
         /// 充币费用类型，1固定，2比例
         /// </summary>
         public FeeMode CoinInHandlingFeeModeType { get; set; }
-
+        /// <summary>
+        /// 充币最小手续费
+        /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
+        public decimal? CoinInHandlingMinFee { get; set; }
         /// <summary>
         /// 提币手续费
         /// </summary>
@@ -95,6 +99,8 @@ namespace Coldairarrow.Entity.Foundation
         /// </summary>
         public FeeMode CoinOutHandlingFeeModeType { get; set; }
 
+        [Column(TypeName = "decimal(28, 16)")]
+        public decimal? CoinOutHandlingMinFee { get; set; }
         /// <summary>
         /// 是否默认
         /// </summary>

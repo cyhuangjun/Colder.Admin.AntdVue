@@ -151,7 +151,7 @@ namespace Coldairarrow.Scheduler.Job
                     }
                     catch (Exception e)
                     {
-                        this._logger.LogError(e, $"移动充币到系统地址错误,TransactionInID:{string.Join(",", txAddressG.Select(e => e.ID))}");
+                        this._logger.LogError(e, $"移动充币到系统地址错误,TransactionInID:{string.Join(",", txAddressG.Select(e => e.Id))}");
                         e.ToExceptionless().Submit();
                     }
                 }
@@ -328,11 +328,11 @@ namespace Coldairarrow.Scheduler.Job
                         tx.UserToSysTXID = moveTXID;
                         tx.MoveToAddress = sysWallet.Address;
                         tx.MoveStatus = MoveStatus.MoveSysWaitConfirm;
-                        tx.MoveAmount = moveAmount;
                         tx.MoveTime = DateTime.Now;
                         tx.MinefeeCoinID = coin.Id;
                         tx.MoveToAddress = sysAddress;
                     }
+                    txAddressGroup.First().MoveAmount = moveAmount;
                 }
                 await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
             }
@@ -399,11 +399,11 @@ namespace Coldairarrow.Scheduler.Job
                     tx.LastUpdateTime = DateTime.Now;
                     tx.UserToSysTXID = moveTXID;
                     tx.MoveToAddress = sysWallet.Address;
-                    tx.MoveStatus = MoveStatus.MoveSysWaitConfirm;
-                    tx.MoveAmount = totalTokenAmount;
+                    tx.MoveStatus = MoveStatus.MoveSysWaitConfirm; 
                     tx.MoveTime = DateTime.Now;
                     tx.MinefeeCoinID = coin.Id;
                 }
+                txAddressGroup.First().MoveAmount = totalTokenAmount;
                 await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
             }
             else

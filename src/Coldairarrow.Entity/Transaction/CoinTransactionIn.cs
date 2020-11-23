@@ -11,12 +11,11 @@ namespace Coldairarrow.Entity.Transaction
     [Table("CoinTransactionIn")]
     public class CoinTransactionIn
     {
-
         /// <summary>
         /// ID
         /// </summary>
         [Key, Column(Order = 1)]
-        public String ID { get; set; }
+        public String Id { get; set; }
 
         /// <summary>
         /// Account
@@ -119,5 +118,11 @@ namespace Coldairarrow.Entity.Transaction
         public decimal ReserveMinerfees { set; get; } 
 
         public MoveStatus MoveStatus { set; get; }
+
+        public decimal? CoinInHandlingFee { set; get; }
+        /// <summary>
+        /// 实际到账金额
+        /// </summary>
+        public decimal? ArrivalAmount { set; get; }
     }
 }

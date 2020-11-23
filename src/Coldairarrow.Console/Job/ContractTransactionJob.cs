@@ -158,7 +158,7 @@ namespace Coldairarrow.Scheduler.Job
                         {
                             var transaction = new CoinTransactionIn
                             {
-                                ID = Guid.NewGuid().GuidTo16String(),
+                                Id = Guid.NewGuid().GuidTo16String(),
                                 Account = coinInTransaction.Account,
                                 Address = coinInTransaction.Address,
                                 FromAddress = coinInTransaction.FromAddress,
