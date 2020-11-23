@@ -112,7 +112,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// CallBackStatus
         /// </summary>
-        public Int32? CallBackStatus { get; set; }
+        public APICallBackStatus? CallBackStatus { get; set; }
 
         /// <summary>
         /// 创建时间

@@ -53,6 +53,7 @@ namespace Coldairarrow.Business.Transaction
             }
         }
 
+        [Transactional]
         public async Task<AjaxResult> UpdateAssets(params AssetsChangeItemDTO[] assetsChangeItems)
         {
             AjaxResult result = new AjaxResult();
