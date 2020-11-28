@@ -124,5 +124,15 @@ namespace Coldairarrow.Entity.Transaction
         /// 实际到账金额
         /// </summary>
         public decimal? ArrivalAmount { set; get; }
+
+        public string PaymentID { set; get; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+
+        /// <summary>
+        /// CallBackStatus
+        /// </summary>
+        public APICallBackStatus? CallBackStatus { get; set; }
     }
 }

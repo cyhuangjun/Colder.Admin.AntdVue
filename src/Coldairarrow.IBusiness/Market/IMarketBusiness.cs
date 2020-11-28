@@ -12,8 +12,6 @@ namespace Coldairarrow.IBusiness.Market
     {
         Task<AjaxResult<CurrencyEstimateViewDto>> EstimateAsync(EstimateRequest request);
         Task<AjaxResult<PaymentViewDto>> PaymentAsync(string userId, PaymentRequest request);
-
-        Task<AjaxResult<PaymentResultViewDto>> PaymentAsync(string userId, string paymentId);
         Task<AjaxResult<MinAmountViewDto>> MinAmountAsync(string userId, string currency);
         Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, TransfersRequest request);
         Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, string withdrawId);

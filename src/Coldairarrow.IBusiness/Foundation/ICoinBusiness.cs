@@ -18,7 +18,6 @@ namespace Coldairarrow.Business.Foundation
 
         Task<Coin> GetCoinByCodeAsync(string code);
 
-        Task<decimal> GetFeeRate(string userId, string coinId);
 
         Coin GetEntity(Expression<Func<Coin, bool>> expression);
         Task<Coin> GetEntityAsync(Expression<Func<Coin, bool>> expression);

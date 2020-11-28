@@ -90,10 +90,6 @@ namespace Coldairarrow.Business.Foundation
             return result;
         }
 
-        public Task<decimal> GetFeeRate(string userId, string coinId)
-        {
-            throw new NotImplementedException();
-        }
         #endregion
 
         #region 私有成员

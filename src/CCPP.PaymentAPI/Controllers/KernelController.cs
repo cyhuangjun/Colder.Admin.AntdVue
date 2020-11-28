@@ -85,21 +85,7 @@ namespace CCPP.PaymentAPI.Controllers
             var response = await _marketBus.PaymentAsync(userId, request);
             response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
             return response;
-        }
-        /// <summary>
-        /// Get payment status
-        /// </summary>
-        /// <param name="paymentId">payment Id</param>
-        /// <returns></returns>
-        [Route("api/v1/payment/{paymentId}")]
-        [HttpGet]
-        public async Task<AjaxResult<PaymentResultViewDto>> Payment(string paymentId)
-        {
-            var userId = this.CurrentUser.Id;
-            var response = await _marketBus.PaymentAsync(userId, paymentId);
-            response.Mac = this.Sign(response.Data, this.CurrentUser.SecretKey);
-            return response;
-        }
+        }       
         /// <summary>
         /// Get the minimum payment amount
         /// </summary>

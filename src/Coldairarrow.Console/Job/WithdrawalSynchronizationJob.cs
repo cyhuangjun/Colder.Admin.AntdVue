@@ -133,7 +133,7 @@ namespace Coldairarrow.Scheduler.Job
                 }
                 catch (Exception ex)
                 {
-                    var errorMsg = $"转出交易错误,交易ID{transaction.ID}";
+                    var errorMsg = $"转出交易错误,交易ID{transaction.Id}";
                     this._logger.LogError(ex, errorMsg);
                     (new Exception(errorMsg)).ToExceptionless().Submit();
                     ex.ToExceptionless().Submit();

@@ -13,5 +13,6 @@ namespace Coldairarrow.Scheduler
         public string MoveToSysWalletJobCronExpression { get; set; }
         public string DepositAccountingJobCronExpression { set; get; } 
         public string CallbackJobCronExpression { get; set; } 
+        public string TransfersSyncJobCronExpression { set; get; }
     }
 }

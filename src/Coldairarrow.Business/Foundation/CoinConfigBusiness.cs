@@ -107,6 +107,15 @@ namespace Coldairarrow.Business.Foundation
                 this._cache.Add(cacheKey, result);
             return result;
         }
+
+        public async Task<CoinConfig> GetEntityAsync(string userId, string currency)
+        {
+            var coinConfigId = (await this._base_UserBusiness.GetTheDataAsync(userId)).CoinConfigID;
+            var coinConfig = await this.GetEntityAsync(e => e.IsDefault && e.Currency == currency);
+            if (!string.IsNullOrEmpty(coinConfigId))
+                coinConfig = await this.GetTheDataAsync(coinConfigId);
+            return coinConfig;
+        }
         #endregion
 
         #region 私有成员

@@ -16,6 +16,8 @@ namespace Coldairarrow.Business.Foundation
         Task UpdateDataAsync(CoinConfig data);
         Task DeleteDataAsync(List<string> ids);
         Task<MinAmountViewDto> MinAmountAsync(string userId, string currency);
+        Task<CoinConfig> GetEntityAsync(string userId, string currency);
+
 
         CoinConfig GetEntity(Expression<Func<CoinConfig, bool>> expression);
         Task<CoinConfig> GetEntityAsync(Expression<Func<CoinConfig, bool>> expression);
