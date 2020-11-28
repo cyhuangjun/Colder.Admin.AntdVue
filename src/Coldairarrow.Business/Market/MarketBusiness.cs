@@ -35,6 +35,7 @@ namespace Coldairarrow.Business.Market
         IUserAssetsBusiness _userAssetsBusiness;
         IBase_UserBusiness _base_UserBusiness;
         ICoinConfigBusiness _coinConfigBusiness;
+        ICacheDataBusiness _cacheDataBusiness;
         public MarketBusiness(IDbAccessor db,
                                 ICacheManager<object> cache,
                                 ICurrencyBusiness currencyBusiness,
@@ -42,7 +43,9 @@ namespace Coldairarrow.Business.Market
                                 ICryptocurrencyBusiness cryptocurrencyBusiness,
                                 IUserAssetsBusiness userAssetsBusiness,
                                 IBase_UserBusiness base_UserBusiness,
-                                ICoinConfigBusiness coinConfigBusiness)
+                                ICoinConfigBusiness coinConfigBusiness,
+                                ICoinTransactionOutBusiness coinTransactionOutBusiness,
+                                ICacheDataBusiness cacheDataBusiness)
         {
             _db = db;
             _cache = cache;
@@ -52,6 +55,7 @@ namespace Coldairarrow.Business.Market
             _userAssetsBusiness = userAssetsBusiness;
             _base_UserBusiness = base_UserBusiness;
             _coinConfigBusiness = coinConfigBusiness;
+            _cacheDataBusiness = cacheDataBusiness;
         }
         #endregion
 
@@ -121,14 +125,13 @@ namespace Coldairarrow.Business.Market
             return result;
         }
 
-        [Transactional]
         public async Task<AjaxResult<PaymentViewDto>> PaymentAsync(string userId, PaymentRequest request)
         {
             var result = new AjaxResult<PaymentViewDto>();
-            if (string.IsNullOrEmpty(request.PriceCurrency))
+            if (string.IsNullOrEmpty(request.UID))
             {
-                result.ErrorCode = ErrorCodeDefine.CurrencyRequired;
-                result.Msg = "Fiatcurrency cannot be empty!";
+                result.ErrorCode = ErrorCodeDefine.CoinNotRequired;
+                result.Msg = "uid cannot be empty!";
                 return result;
             }
             if (string.IsNullOrEmpty(request.PayCurrency))
@@ -137,21 +140,13 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "Cryptocurrency cannot be empty!";
                 return result;
             }
-
             var coin = await this._coinBusiness.GetCoinByCodeAsync(request.PayCurrency);
-            var currency = await this._currencyBusiness.GetCurrencyByCodeAsync(request.PriceCurrency);
             if (coin == null)
             {
                 result.ErrorCode = ErrorCodeDefine.CoinNotExist;
                 result.Msg = $"Cryptocurrency {request.PayCurrency} Not Exist!";
                 return result;
             }
-            if (currency == null)
-            {
-                result.ErrorCode = ErrorCodeDefine.CurrencyNoExist;
-                result.Msg = $"Fiatcurrency {request.PriceCurrency}  Not Exist!";
-                return result;
-            } 
             if (!coin.IsSupportWallet)
             {
                 result.ErrorCode = ErrorCodeDefine.WalletMaintenancing;
@@ -165,33 +160,7 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "userid not exist.";
                 return result;
             }
-            if(!request.PayAmount.HasValue)
-            {
-                var estimateResult = await this.EstimateAsync(new EstimateRequest() { Amount = request.PriceAmount, CurrencyFrom = request.PriceCurrency, CurrencyTo = request.PayCurrency });
-                if(!estimateResult.Success)
-                {
-                    result.ErrorCode = estimateResult.ErrorCode;
-                    result.Msg = estimateResult.Msg;
-                    return result;
-                }
-                request.PayAmount = estimateResult.Data.EstimatedAmount;
-            }
-            if (request.PayAmount <= 0 || request.PriceAmount <= 0 || request.PayAmount >= 100000000 || request.PriceAmount >= 100000000)
-            {
-                result.ErrorCode = ErrorCodeDefine.ParameterInvalid;
-                result.Msg = "Parameter Invalid!";
-                return result;
-            }
-            var payAmount = request.PayAmount.Value; 
-            var coinConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.PayCurrency);
-            if (coinConfig != null)
-            {
-                if (coinConfig.MinPaymentAmount > payAmount)
-                    result.ErrorCode = ErrorCodeDefine.PaymentLessThanMinQty;
-                result.Msg = "payment less than min qty.";
-                return result;
-            }
-            var wallet = await this._db.GetIQueryable<Wallet>().Where(e => e.UserID == userId && e.UID == request.UID && e.CoinID == coin.Id).FirstOrDefaultAsync();
+            var wallet = await this._cacheDataBusiness.GetWallet(userId, request.UID, coin.Id);
             if (wallet == null)
             {
                 var cryptocurrencyProvider = await _cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
@@ -206,7 +175,7 @@ namespace Coldairarrow.Business.Market
                     result.ErrorCode = ErrorCodeDefine.ServerError;
                     result.Msg = $"server error, {addressResult.Error}!";
                     return result;
-                } 
+                }
                 var walletId = Guid.NewGuid().GuidTo16String();
                 wallet = new Wallet()
                 {
@@ -223,81 +192,22 @@ namespace Coldairarrow.Business.Market
                 };
                 await this._db.InsertAsync(wallet);
             }
-            var payment = new Payment()
-            {
-                Id = Guid.NewGuid().GuidTo16String(),
-                CreatedAt = DateTime.Now,
-                OrderId = request.OrderId,
-                OrderDescription = request.OrderDescription,
-                UID = request.UID,
-                PayAddress = wallet.Address,
-                PayAmount = payAmount,
-                PayCurrency = request.PayCurrency,
-                PriceAmount = request.PriceAmount,
-                PriceCurrency = request.PriceCurrency,
-                PurchaseId = request.PurchaseId,
-                Status = PaymentStatus.Waiting,
-                UserID = userId,
-                CallbackUrl = request.CallbackUrl,
-                UpdatedAt = DateTime.Now
-            };
-            await _db.InsertAsync(payment);
-
+            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.PayCurrency);
+            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(userId, coin.Code);
             result.Success = true;
             result.ErrorCode = ErrorCodeDefine.Success;
             result.Data = new PaymentViewDto()
             {
-                CallbackUrl = payment.CallbackUrl,
-                CreatedAt = payment.CreatedAt,
-                OrderDescription = payment.OrderDescription,
-                OrderId = payment.OrderId,
-                UID = payment.UID,
+                UID = request.UID,
                 PayAddress = wallet.Address,
-                PayAmount = payment.PayAmount,
-                PayCurrency = payment.PayCurrency,
-                PaymentId = payment.Id,
-                PriceAmount = payment.PriceAmount,
-                PriceCurrency = payment.PriceCurrency,
-                PurchaseId = payment.PurchaseId,
-                UpdatedAt = payment.UpdatedAt,
-                Status = payment.Status
+                PayCurrency = request.PayCurrency,
+                FeeRate = coinConfig?.CoinInHandlingFeeRate,
+                FeeType = coinConfig?.CoinInHandlingFeeModeType,
+                FixFee = coinConfig?.CoinInHandlingFee,
+                MinFee = coinConfig?.CoinInHandlingMinFee,
+                MinPayAmount = minAmountConfig.MinPaymentAmount
             };
             return result;
-        }
-
-        public async Task<AjaxResult<PaymentResultViewDto>> PaymentAsync(string userId, string paymentId)
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(paymentId))
-                return new AjaxResult<PaymentResultViewDto>() { ErrorCode = ErrorCodeDefine.ParameterInvalid, Success = false, Msg = "Parameter Invalid!" };
-            var payment = await this._db.GetEntityAsync<Payment>(paymentId);
-            if (payment == null)
-                return new AjaxResult<PaymentResultViewDto>() { ErrorCode = ErrorCodeDefine.ParameterInvalid, Success = false, Msg = "Parameter Invalid!" };
-            if (payment.UserID != userId)
-                return new AjaxResult<PaymentResultViewDto>() { ErrorCode = ErrorCodeDefine.IllegalOperation, Success = false, Msg = "Illegal Operation!" };
-            
-            return new AjaxResult<PaymentResultViewDto>()
-            {
-                Success = true,
-                ErrorCode = ErrorCodeDefine.Success,
-                Data = new PaymentResultViewDto()
-                {
-                    CreatedAt = payment.CreatedAt,
-                    OrderDescription = payment.OrderDescription,
-                    UID = payment.UID,
-                    PayAddress = payment.PayAddress,
-                    PayAmount = payment.PayAmount,
-                    PayCurrency = payment.PayCurrency,
-                    PaymentId = payment.Id,
-                    PriceAmount = payment.PriceAmount,
-                    PriceCurrency = payment.PriceCurrency,
-                    PurchaseId = payment.PurchaseId,
-                    UpdatedAt = payment.UpdatedAt,
-                    Status = payment.Status,
-                    ActuallyPaid = payment.ActuallyPaid,
-                    ActualAmount = payment.ActualAmount,
-                    OrderId = payment.OrderId
-                }
-            };
         }
 
         [Transactional]
@@ -325,8 +235,22 @@ namespace Coldairarrow.Business.Market
                 return result;
             }
             var balance = await this._userAssetsBusiness.GetBalance(userId, request.CurrencyFrom);
-            var feeRate = await this._coinBusiness.GetFeeRate(userId, coin.Id);
-            var fee = request.AmountFrom * feeRate;
+            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(userId, coin.Code);
+            var fee = 0m; 
+            if (coinConfig != null)
+            {
+                // 固定手续费
+                if (coinConfig.CoinOutHandlingFeeModeType == FeeMode.Fixed)
+                {
+                    fee = coinConfig.CoinOutHandlingFee ?? 0;
+                }
+                else
+                {
+                    fee = request.AmountFrom * coinConfig.CoinOutHandlingFeeRate ?? 0;
+                    fee = Math.Round(fee, GlobalData.QuantityPercision);
+                    fee = Math.Max(fee, coinConfig.CoinOutHandlingMinFee ?? 0);
+                }
+            }
             if (balance < (request.AmountFrom + fee))
             {
                 result.ErrorCode = ErrorCodeDefine.CryptocurrencyAssetsNotEnought;
@@ -345,10 +269,10 @@ namespace Coldairarrow.Business.Market
                 result.Msg = estimateResult.Msg;
                 return result;
             }
-            var coinConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.CurrencyTo);
-            if (coinConfig != null)
+            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.CurrencyTo);
+            if (minAmountConfig != null)
             {
-                if (coinConfig.MinTransferAmount > estimateResult.Data.EstimatedAmount)
+                if (minAmountConfig.MinTransferAmount > estimateResult.Data.EstimatedAmount)
                     result.ErrorCode = ErrorCodeDefine.TransferLessThanMinQty;
                 result.Msg = "transfer less than min qty.";
                 return result;
@@ -377,18 +301,36 @@ namespace Coldairarrow.Business.Market
                 AddressTo = request.AddressTo,
                 AmountFrom = request.AmountFrom,
                 AmountTo = estimateResult.Data.EstimatedAmount,
-                CallbackUrl = request.CallbackUrl,
                 CreatedAt = DateTime.Now,
                 CurrencyFrom = request.CurrencyFrom,
                 CurrencyTo = request.CurrencyTo,
-                Fee = fee,
-                FeeRate = feeRate,
+                HandlingFee = fee, 
                 OrderDescription = request.OrderDescription,
                 OrderId = request.OrderId,
                 Status = TransfersStatus.Waiting,
                 UpdatedAt = DateTime.Now,
                 UserID = userId,
-            };
+            }; 
+
+            var coinTo = await this._coinBusiness.GetCoinByCodeAsync(request.CurrencyTo);
+            if (coinTo != null)
+            {
+                var coinTransactionOut = new CoinTransactionOut()
+                {
+                    Id = Guid.NewGuid().GuidTo16String(),
+                    Address = transfers.AddressTo,
+                    AddressTag = string.Empty,
+                    Amount = transfers.AmountTo,
+                    CoinID = coinTo.Id,
+                    CreateTime = DateTime.Now,
+                    LastUpdateTime = DateTime.Now,
+                    LastUpdateUserID = userId,
+                    Status = TransactionStatus.Apply,
+                    UserID = userId,
+                };
+                await _db.InsertAsync(coinTransactionOut);
+                transfers.TransactionOutID = coinTransactionOut.Id;
+            }
             await _db.InsertAsync(transfers);
 
             result.Success = true;
@@ -398,7 +340,6 @@ namespace Coldairarrow.Business.Market
                 AddressTo = transfers.AddressTo,
                 AmountFrom = transfers.AmountFrom,
                 AmountTo = transfers.AmountTo,
-                CallbackUrl = transfers.CallbackUrl,
                 CurrencyFrom = transfers.CurrencyFrom,
                 CurrencyTo = transfers.CurrencyTo,
                 OrderDescription = transfers.OrderDescription,
@@ -426,8 +367,7 @@ namespace Coldairarrow.Business.Market
                 {
                     AddressTo = transfers.AddressTo,
                     AmountFrom = transfers.AmountFrom,
-                    AmountTo = transfers.AmountTo,
-                    CallbackUrl = transfers.CallbackUrl,
+                    AmountTo = transfers.AmountTo, 
                     CurrencyFrom = transfers.CurrencyFrom,
                     CurrencyTo = transfers.CurrencyTo,
                     OrderDescription = transfers.OrderDescription,

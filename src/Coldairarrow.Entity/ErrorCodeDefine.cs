@@ -110,7 +110,10 @@ namespace Coldairarrow.Entity
         /// 交易对评估价未发现
         /// </summary>
         public const int EstimatePriceNotFound = 40025;
-
+        /// <summary>
+        /// UID不能为空
+        /// </summary>
+        public const int UIDNotRequired = 40026;
         #region 基础
         /// <summary>
         /// 处理成功

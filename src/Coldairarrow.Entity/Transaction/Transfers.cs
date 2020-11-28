@@ -64,18 +64,12 @@ namespace Coldairarrow.Entity.Transaction
         /// AddressTo
         /// </summary>
         public String AddressTo { get; set; }
-
-        /// <summary>
-        /// 货币手续费率
-        /// </summary>
-        [Column(TypeName = "decimal(28, 16)")]
-        public Decimal? FeeRate { get; set; }
-
+          
         /// <summary>
         /// 手续费
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public Decimal? Fee { get; set; }
+        public Decimal? HandlingFee { get; set; }
 
         /// <summary>
         /// 转出ID
@@ -91,11 +85,6 @@ namespace Coldairarrow.Entity.Transaction
         /// ApproveTime
         /// </summary>
         public DateTime? ApproveTime { get; set; }
-
-        /// <summary>
-        /// CallbackUrl
-        /// </summary>
-        public String CallbackUrl { get; set; }
 
         /// <summary>
         /// CallBackStatus

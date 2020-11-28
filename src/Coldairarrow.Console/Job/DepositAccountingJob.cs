@@ -28,10 +28,11 @@ namespace Coldairarrow.Scheduler.Job
         /// <summary>
         /// 运行状态
         /// </summary>
-        private static int _runStatus = 0; 
+        private static int _runStatus = 0;
         #endregion
 
         #region DI
+        private readonly TransactionContainer _transactionContainer;
         private readonly ILifetimeScope _container;
         private readonly ILogger<DepositAccountingJob> _logger;
         private readonly ICacheDataBusiness _cacheDataBusiness; 
@@ -56,6 +57,7 @@ namespace Coldairarrow.Scheduler.Job
             this._userAssetsWasteBookBusiness = this._container.Resolve<IUserAssetsWasteBookBusiness>();
             this._base_UserBusiness = this._container.Resolve<IBase_UserBusiness>();
             this._userAssetsBusiness = this._container.Resolve<IUserAssetsBusiness>();
+            this._transactionContainer = this._container.Resolve<TransactionContainer>();
         }
 
         public Task Execute(IJobExecutionContext context)
@@ -102,8 +104,18 @@ namespace Coldairarrow.Scheduler.Job
             await HandleETHToken(coins, transactionIns); 
             await HandleETH(coins, transactionIns);
             #endregion  
-            await VerifyBlockChainTxId(coins, transactionIns); 
-            await Accounting(coins, transactionIns);
+            await VerifyBlockChainTxId(coins, transactionIns);
+            try
+            {
+                await this._transactionContainer.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+                await Accounting(coins, transactionIns);
+                this._transactionContainer.CommitTransaction();
+            }
+            catch(Exception e)
+            {
+                this._transactionContainer.RollbackTransaction();
+                this._logger.LogError(e, e.Message);
+            } 
         }
         /// <summary>
         /// 合法性检查
@@ -177,10 +189,7 @@ namespace Coldairarrow.Scheduler.Job
                     //实际到账
                     decimal receiveQuantity = item.Amount;
                     var coin = coins.First(e => e.Id == item.CoinID);
-                    var coinConfigId = (await this._base_UserBusiness.GetTheDataAsync(item.UserID)).CoinConfigID;
-                    var coinConfig = await this._coinConfigBusiness.GetEntityAsync(e => e.IsDefault && e.Currency == coin.Code.ToUpper());
-                    if (!string.IsNullOrEmpty(coinConfigId))
-                        coinConfig = await this._coinConfigBusiness.GetTheDataAsync(coinConfigId);
+                    var coinConfig = await this._coinConfigBusiness.GetEntityAsync(item.UserID, coin.Code); 
                     var minimumDeposit = this._coinConfigBusiness.MinAmountAsync(item.UserID, coin.Code);
                     if (coinConfig != null)
                     {

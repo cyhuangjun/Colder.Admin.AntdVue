@@ -14,10 +14,6 @@ namespace Coldairarrow.Entity.Request
 
         public string AddressTo { set; get; }
         /// <summary>
-        /// (optional) - url to receive callbacks, should contain "http" or "https", eg. "https://xxx.xx"
-        /// </summary>
-        public string CallbackUrl { set; get; }
-        /// <summary>
         ///  (optional) - inner store order ID, e.g. "RGDBP-21314"
         /// </summary>
         public string OrderId { set; get; }

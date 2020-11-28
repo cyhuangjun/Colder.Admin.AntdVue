@@ -16,7 +16,7 @@ namespace Coldairarrow.Entity.Transaction
         /// ID
         /// </summary>
         [Key, Column(Order = 1)]
-        public String ID { get; set; }
+        public String Id { get; set; }
 
         /// <summary>
         /// UserID
@@ -133,6 +133,8 @@ namespace Coldairarrow.Entity.Transaction
         /// </summary>
         public DateTime CreateTime { get; set; }
 
+        public DateTime? ApproveTime { set; get; }
+
         /// <summary>
         /// LastUpdateUserID
         /// </summary>
@@ -141,7 +143,10 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// LastUpdateTime
         /// </summary>
-        public DateTime? LastUpdateTime { get; set; }
+        public DateTime LastUpdateTime { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
 
     }
 }

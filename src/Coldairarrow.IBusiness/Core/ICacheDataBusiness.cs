@@ -1,4 +1,5 @@
-﻿using Coldairarrow.Entity.Foundation;
+﻿using Coldairarrow.Entity.Base_Manage;
+using Coldairarrow.Entity.Foundation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,5 +11,9 @@ namespace Coldairarrow.IBusiness.Core
     {
         Task<List<Coin>> GetCoinsAsync();
         Task<Coin> GetCoinAsync(string coinId);
+        Task<Base_User> GetUserAsync(string userId);
+
+        Task<Wallet> GetWalletByAddress(string address);
+        Task<Wallet> GetWallet(string userId, string clientUid, string coinId);
     }
 }

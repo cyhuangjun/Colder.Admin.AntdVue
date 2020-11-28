@@ -40,7 +40,8 @@ namespace Coldairarrow.Scheduler
             CreateJob<WithdrawalSynchronizationJob>("WithdrawalSynchronizationJob", settings.WithdrawalSynchronizationCronExpression);
             CreateJob<MoveToSysWalletJob>("CoinTransactionMoveToSysJob", settings.MoveToSysWalletJobCronExpression);
             CreateJob<DepositAccountingJob>("DepositAccountingJob", settings.DepositAccountingJobCronExpression);
-            CreateJob<CallbackJob>("CallbackJob", settings.CallbackJobCronExpression);    
+            CreateJob<CallbackJob>("CallbackJob", settings.CallbackJobCronExpression);
+            CreateJob<TransfersSyncJob>("TransfersSyncJob", settings.TransfersSyncJobCronExpression);
         }
 
         private void CreateJob<T>(string uid, string cronExpression) where T : IJob

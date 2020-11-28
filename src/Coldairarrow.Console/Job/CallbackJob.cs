@@ -38,7 +38,7 @@ namespace Coldairarrow.Scheduler.Job
         private readonly ILogger<DepositAccountingJob> _logger;
         private readonly ICacheDataBusiness _cacheDataBusiness;
         private readonly ITransfersBusiness _transfersBusiness;
-        private readonly IPaymentBusiness _paymentBusiness;
+        private readonly ICoinTransactionInBusiness _coinTransactionInBusiness;
         private readonly IBase_UserBusiness _base_UserBusiness;
         #endregion
 
@@ -48,7 +48,7 @@ namespace Coldairarrow.Scheduler.Job
             this._logger = this._container.Resolve<ILogger<DepositAccountingJob>>();
             this._cacheDataBusiness = this._container.Resolve<ICacheDataBusiness>();
             this._transfersBusiness = this._container.Resolve<ITransfersBusiness>();
-            this._paymentBusiness = this._container.Resolve<IPaymentBusiness>();
+            this._coinTransactionInBusiness = this._container.Resolve<ICoinTransactionInBusiness>();
             this._base_UserBusiness = this._container.Resolve<IBase_UserBusiness>();
         }
 
@@ -88,36 +88,38 @@ namespace Coldairarrow.Scheduler.Job
 
         private async Task ExcuteRecharge()
         {
-            var records = await this._paymentBusiness.GetListAsync(e => e.Status == PaymentStatus.Finished && !string.IsNullOrEmpty(e.CallbackUrl) && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
+            var records = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.ArrivedAccount && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
             foreach (var record in records)
             {
-                record.CallBackStatus = await ExcutePaymentCallBack(record);
-                await this._paymentBusiness.UpdateDataAsync(record);
+                var user = await this._cacheDataBusiness.GetUserAsync(record.UserID);
+                record.CallBackStatus = await ExcutePaymentCallBack(record, user.PaymentCallbackUrl);
+                await this._coinTransactionInBusiness.UpdateDataAsync(record);
             }
-        } 
+        }
 
         private async Task ExcuteWithdrawal()
         {
-            var records = await this._transfersBusiness.GetListAsync(e => e.Status == TransfersStatus.Finished  && !string.IsNullOrEmpty(e.CallbackUrl) && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
+            var records = await this._transfersBusiness.GetListAsync(e => e.Status == TransfersStatus.Finished && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
             foreach (var record in records)
             {
-                record.CallBackStatus = await ExcuteTransfersCallBack(record);
+                var user = await this._cacheDataBusiness.GetUserAsync(record.UserID);
+                record.CallBackStatus = await ExcuteTransfersCallBack(record, user.TransfersCallbackUrl);
                 await this._transfersBusiness.UpdateDataAsync(record);
             }
         }
 
-        private async Task<APICallBackStatus> ExcuteTransfersCallBack(Transfers transfers)
+        private async Task<APICallBackStatus> ExcuteTransfersCallBack(Transfers transfers, string callBackUrl)
         {
             try
             {
-                if (string.IsNullOrEmpty(transfers.CallbackUrl)) return APICallBackStatus.NotCallBackConfigured;
+                if (string.IsNullOrEmpty(callBackUrl)) return APICallBackStatus.NotCallBackConfigured;
                 var customer = await this._base_UserBusiness.GetTheDataAsync(transfers.UserID);
                 var request = new CashOutRequest()
                 {
                     AddressTo = transfers.AddressTo,
                     AmountFrom = transfers.AmountFrom,
                     AmountTo = transfers.AmountTo,
-                    CallbackUrl = transfers.CallbackUrl,
+                    CallbackUrl = callBackUrl,
                     CurrencyFrom = transfers.CurrencyFrom,
                     CurrencyTo = transfers.CurrencyTo,
                     OrderDescription = transfers.OrderDescription,
@@ -131,7 +133,7 @@ namespace Coldairarrow.Scheduler.Job
                     request.Mac = signParameters.Sign(customer.SecretKey);
                     signParameters.Add("mac", request.Mac);
                 }
-                var content = RestSharpHttpHelper.RestAction(transfers.CallbackUrl, string.Empty, signParameters, RestSharp.Method.POST);
+                var content = RestSharpHttpHelper.RestAction(callBackUrl, string.Empty, signParameters, RestSharp.Method.POST);
                 return APICallBackStatus.Succeeded;
             }
             catch (Exception e)
@@ -141,29 +143,26 @@ namespace Coldairarrow.Scheduler.Job
             }
         }
 
-        private async Task<APICallBackStatus> ExcutePaymentCallBack(Payment payment)
+        private async Task<APICallBackStatus> ExcutePaymentCallBack(CoinTransactionIn payment, string callBackUrl)
         {
             try
             {
-                if (string.IsNullOrEmpty(payment.CallbackUrl)) return APICallBackStatus.NotCallBackConfigured;
+                if (string.IsNullOrEmpty(callBackUrl)) return APICallBackStatus.NotCallBackConfigured;
+                var wallet = await this._cacheDataBusiness.GetWalletByAddress(payment.Address);
                 var customer = await this._base_UserBusiness.GetTheDataAsync(payment.UserID);
+                var coin = await this._cacheDataBusiness.GetCoinAsync(payment.CoinID);
                 var request = new CashInRequest()
                 {
-                    CreatedAt = payment.CreatedAt,
-                    OrderDescription = payment.OrderDescription,
-                    UID = payment.UID,
-                    PayAddress = payment.PayAddress,
-                    PayAmount = payment.PayAmount,
-                    PayCurrency = payment.PayCurrency,
+                    Amount = payment.Amount,
+                    ClientUid = wallet.UID,
+                    Fee = payment.CoinInHandlingFee ?? 0m,
+                    FromAddress = payment.FromAddress,
                     PaymentId = payment.Id,
-                    PriceAmount = payment.PriceAmount,
-                    PriceCurrency = payment.PriceCurrency,
-                    PurchaseId = payment.PurchaseId,
-                    UpdatedAt = payment.UpdatedAt,
-                    Status = payment.Status,
-                    ActuallyPaid = payment.ActuallyPaid,
-                    ActualAmount = payment.ActualAmount,
-                    OrderId = payment.OrderId
+                    PayAddress = payment.Address,
+                    PayCurrency = coin.Code,
+                    TXID = payment.TXID,
+                    Status = (payment.Status == TransactionStatus.ArrivedAccount ? PaymentStatus.Finished : PaymentStatus.Waiting)
+
                 };
                 var signParameters = request.ToDictionary();
                 if (!string.IsNullOrEmpty(customer.SecretKey))
@@ -171,7 +170,7 @@ namespace Coldairarrow.Scheduler.Job
                     request.Mac = signParameters.Sign(customer.SecretKey);
                     signParameters.Add("mac", request.Mac);
                 }
-                var content = RestSharpHttpHelper.RestAction(payment.CallbackUrl, string.Empty, signParameters, RestSharp.Method.POST);
+                var content = RestSharpHttpHelper.RestAction(callBackUrl, string.Empty, signParameters, RestSharp.Method.POST);
                 return APICallBackStatus.Succeeded;
             }
             catch (Exception e)
