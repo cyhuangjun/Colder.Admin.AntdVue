@@ -73,6 +73,10 @@ namespace Coldairarrow.Entity.Transaction
         /// </summary>
         public String Hexstring { get; set; }
 
+        public string MinefeeCoinID { set; get; }
+
+        public decimal Minefee { set; get; }
+
         /// <summary>
         /// SignedResult1
         /// </summary>

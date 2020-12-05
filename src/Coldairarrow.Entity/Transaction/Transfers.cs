@@ -39,26 +39,15 @@ namespace Coldairarrow.Entity.Transaction
         public TransfersStatus Status { get; set; }
 
         /// <summary>
-        /// CurrencyFrom
+        /// Currency
         /// </summary>
-        public String CurrencyFrom { get; set; }
+        public String Currency { get; set; }
 
         /// <summary>
-        /// AmountFrom
+        /// Amount
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public Decimal AmountFrom { get; set; }
-
-        /// <summary>
-        /// CurrencyTo
-        /// </summary>
-        public String CurrencyTo { get; set; }
-
-        /// <summary>
-        /// AmountTo
-        /// </summary>
-        [Column(TypeName = "decimal(28, 16)")]
-        public Decimal AmountTo { get; set; }
+        public Decimal Amount { get; set; }
 
         /// <summary>
         /// AddressTo
@@ -105,6 +94,8 @@ namespace Coldairarrow.Entity.Transaction
         /// 最后更新用户ID
         /// </summary>
         public String LastUpdateUserID { get; set; }
+
+        public string TXID { get; set; }
 
     }
 }

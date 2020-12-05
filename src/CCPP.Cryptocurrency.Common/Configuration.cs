@@ -47,5 +47,9 @@ namespace CCPP.Cryptocurrency.Common
         /// 多签地址
         /// </summary>
         public Tuple<string, string> MultiSigAddress { get; set; }
+
+        public decimal GasPrice { set; get; }
+
+        public decimal MinerFeeRate { set; get; }
     }
 }

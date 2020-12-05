@@ -100,7 +100,7 @@ namespace Coldairarrow.Business.Transaction
                         RelateBusinessID = item.RelateID,
                         CreateTime = DateTime.Now,
                         ChangeAmount = item.ChangeAvailableAmount,
-                        ChangeFrozenAmount = item.ChangeFreeAmount, 
+                        ChangeFrozenAmount = item.ChangeFrozenAmount, 
                     };
                     var userassets = await this.Db.GetIQueryable<UserAssets>().Where(e => e.UserID == item.UserID && e.CoinID == item.CoinID).FirstOrDefaultAsync();
                     if (userassets == null)
@@ -111,8 +111,8 @@ namespace Coldairarrow.Business.Transaction
                             CoinID = item.CoinID,
                             UserID = item.UserID,
                             Balance = item.ChangeAvailableAmount,
-                            FrozenAmount = item.ChangeFreeAmount,
-                            TotalAmount = (item.ChangeAvailableAmount + item.ChangeFreeAmount),
+                            FrozenAmount = item.ChangeFrozenAmount,
+                            TotalAmount = (item.ChangeAvailableAmount + item.ChangeFrozenAmount),
                         };
                         inserts.Add(userassets); 
                     }
@@ -122,7 +122,7 @@ namespace Coldairarrow.Business.Transaction
                         wasteBook.OriginalFrozenAmount = userassets.FrozenAmount;
 
                         userassets.Balance += item.ChangeAvailableAmount;
-                        userassets.FrozenAmount += item.ChangeFreeAmount;
+                        userassets.FrozenAmount += item.ChangeFrozenAmount;
                         userassets.TotalAmount = (userassets.Balance + userassets.FrozenAmount);
                         updates.Add(userassets); 
                     } 
@@ -186,8 +186,8 @@ namespace Coldairarrow.Business.Transaction
                 return result;
             }
             assetsChangeItem.ChangeAvailableAmount = Math.Round(assetsChangeItem.ChangeAvailableAmount, GlobalData.CurrencyPrecision);
-            assetsChangeItem.ChangeFreeAmount = Math.Round(assetsChangeItem.ChangeFreeAmount, GlobalData.CurrencyPrecision); 
-            if (assetsChangeItem.ChangeAvailableAmount == 0 && assetsChangeItem.ChangeFreeAmount == 0)
+            assetsChangeItem.ChangeFrozenAmount = Math.Round(assetsChangeItem.ChangeFrozenAmount, GlobalData.CurrencyPrecision); 
+            if (assetsChangeItem.ChangeAvailableAmount == 0 && assetsChangeItem.ChangeFrozenAmount == 0)
             {
                 result.ErrorCode = ErrorCodeDefine.AssetsChangeAmountZero;
                 result.Msg = "assets changeamount zero";

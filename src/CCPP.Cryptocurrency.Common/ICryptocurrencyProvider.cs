@@ -121,7 +121,7 @@ namespace CCPP.Cryptocurrency.Common
         /// </summary>
         /// <param name="data">评估参数</param>
         /// <returns></returns>
-        ResponseData<EstimateGasInfo> EstimateGas(EstimateGasData data);       
+        ResponseData<decimal> EstimateMinerfee(EstimateMinerfeeData data);       
         /// <summary>
         /// 获取交易凭证信息
         /// </summary>

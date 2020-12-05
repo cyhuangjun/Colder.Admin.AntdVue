@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace CCPP.Cryptocurrency.Common.Provider
 {
     public class ETHClientServiceProvider : BaseClientServiceProvider, ICryptocurrencyProvider
-    {
+    { 
         /// <summary>
         /// 锲约方法长度
         /// </summary>
@@ -104,13 +104,18 @@ namespace CCPP.Cryptocurrency.Common.Provider
         public ResponseData<string> GetBlockHash(long height)
         {
             return this.InvokeMethod<string>(ETHRPCMethod.GetBlockHash, DefaultApiName, height);
-        } 
+        }
         /// <summary>
         /// 转币
         /// </summary>
         /// <returns>转账成功返回交易ID</returns>
         public virtual ResponseData<string> SendTransaction(SendCoinData data)
         {
+            if (string.IsNullOrEmpty(data.FromAccount))
+            {
+                data.FromAccount = this._configuration.SysAddress.Address;
+                data.FromAccountPassword = this._configuration.SysAddress.Password;
+            }
             int precision = this._configuration.Precision ?? WeiPrecision;
             var sendTransaction = new SendTransaction
             {
@@ -119,19 +124,10 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 Value = data.Amount.BigToUnitHex(precision),
                 Data = ""
             };
-            if (data.GasPrice > 0)
-            {
-                sendTransaction.GasPrice = data.GasPrice.LongDECToHEX();
-            }
-            if (data.EstimateGas > 0)
-            {
-                sendTransaction.Gas = data.EstimateGas.LongDECToHEX();
-            }
-            if (data.Nonce.HasValue)
-            {
-                sendTransaction.Nonce = data.Nonce.Value.LongDECToHEX();
-            } 
-            return this.InvokeMethod<string>(ETHRPCMethod.SendFrom, DefaultApiName, sendTransaction, data.FromAccountPassword); 
+            sendTransaction.GasPrice = this._configuration.GasPrice.LongDECToHEX();
+            var gas = this.EstimateGas(new EstimateMinerfeeData() { Amount = data.Amount, From = data.FromAccount, To = data.ToCoinAddress });
+            sendTransaction.Gas = gas.LongDECToHEX();
+            return this.InvokeMethod<string>(ETHRPCMethod.SendFrom, DefaultApiName, sendTransaction, data.FromAccountPassword);
         }
                
         /// <summary>
@@ -238,9 +234,12 @@ namespace CCPP.Cryptocurrency.Common.Provider
         /// </summary>
         /// <param name="confirm">最小确认数</param>
         /// <returns></returns>
-        public ResponseData<decimal> GetAllBalance(int confirm)
+        public virtual ResponseData<decimal> GetAllBalance(int confirm)
         {
-            throw new NotImplementedException();
+            return GetBalance(new BalanceData()
+            {
+                Address = this._configuration.SysAddress.Address
+            });
         }
 
         /// <summary>
@@ -350,50 +349,37 @@ namespace CCPP.Cryptocurrency.Common.Provider
             return this.InvokeMethod<bool>(ETHRPCMethod.LockAccount, DefaultApiName, account);
         }
 
-        /// <summary>
-        /// 评估需要消耗的数量
-        /// </summary>
-        /// <param name="from">转出地址</param>
-        /// <param name="to">转到地址</param>
-        /// <param name="amount">转出数量</param>
-        /// <param name="price">转出单价</param>
-        /// <returns></returns>
-        public virtual ResponseData<EstimateGasInfo> EstimateGas(string from, string to, decimal amount, decimal price, string tokenAddress = "")
+        protected virtual decimal EstimateGas(EstimateMinerfeeData data)
         {
-            if (price <= 0)
-            {
-                price = GetGasPrice().Result;
-            }
             Estimate estimate = new Estimate
             {
-                From = from,
-                To = to,
-                AsPrice = price.LongDECToHEX()
+                From = data.From,
+                To = data.To,
+                AsPrice = this._configuration.GasPrice.LongDECToHEX()
             };
-            if (amount > 0)
-            {
-                estimate.Value = amount.BigToUnitHex(WeiPrecision);
-            }
+            if (data.Amount > 0)
+                estimate.Value = data.Amount.BigToUnitHex(WeiPrecision);
             else
-            {
                 estimate.Value = "";
+            decimal gasAmount = 300000;
+            ResponseData<string> gasResult = null;
+            try
+            {
+                if (string.IsNullOrEmpty(data.MultiSigAddress))
+                    gasResult = this.InvokeMethod<string>(ETHRPCMethod.EstimateGas, DefaultApiName, estimate);
+                else
+                    gasResult = this.InvokeMethod<string>(ETHRPCMethod.EstimateGas, DefaultApiName, new { to = data.MultiSigAddress, data = GetSendData(new SendCoinData() { ETHMultiSigResult = data.ETHMultiSigResult, ToCoinAddress = data.To, Amount = data.Amount }) });
+                gasAmount = gasResult.Result.LongHEXToDEC() * GasMultiple;
             }
-            ResponseData<string> gasResult = this.InvokeMethod<string>(ETHRPCMethod.EstimateGas, DefaultApiName, estimate);
-            var gasAmount = gasResult.Result.LongHEXToDEC() * GasMultiple;
-            decimal totalGas = (gasAmount * price) * GasMultiple;
-            totalGas = totalGas.UnitToBig(WeiPrecision);
-            EstimateGasInfo estimateGasInfo = new EstimateGasInfo
+            catch (Exception ex)
             {
-                GasPrice = price,
-                NeedAmount = totalGas,
-                EstimateGas = gasAmount,
-                OrgEstimateGas = gasResult.Result.LongHEXToDEC()
-            };
-            ResponseData<EstimateGasInfo> result = new ResponseData<EstimateGasInfo>
-            {
-                Result = estimateGasInfo
-            };
-            return result;
+                if (string.IsNullOrEmpty(data.MultiSigAddress))
+                    Console.WriteLine($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(estimate)}");
+                else
+                    Console.WriteLine($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(new { to = data.MultiSigAddress, data = GetSendData(new SendCoinData() { ETHMultiSigResult = data.ETHMultiSigResult, ToCoinAddress = data.To, Amount = data.Amount }) })}, ETHMultiSigResult:{JsonConvert.SerializeObject(data.ETHMultiSigResult)}, ToCoinAddress:{data.To}, MultiSigAddress:{data.MultiSigAddress}, Amount:{data.Amount}");
+                WriteLog?.Invoke($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(estimate)}");
+            }
+            return gasAmount;
         }
 
         /// <summary>
@@ -404,54 +390,13 @@ namespace CCPP.Cryptocurrency.Common.Provider
         /// <param name="amount">转出数量</param>
         /// <param name="price">转出单价</param>
         /// <returns></returns>
-        public virtual ResponseData<EstimateGasInfo> EstimateGas(EstimateGasData data)
-        {
-            if (data.Price <= 0)
-            {
-                data.Price = GetGasPrice().Result;
-            }
-            Estimate estimate = new Estimate
-            {
-                From = data.From,
-                To = data.To,
-                AsPrice = data.Price.LongDECToHEX()
-            };
-            if (data.Amount > 0)
-                estimate.Value = data.Amount.BigToUnitHex(WeiPrecision);
-            else
-                estimate.Value = "";
-            decimal gasAmount = 300000;
-            ResponseData<string> gasResult = null;
-            decimal totalGas = 0;
-            try
-            {
-                if (string.IsNullOrEmpty(data.MultiSigAddress))
-                    gasResult = this.InvokeMethod<string>(ETHRPCMethod.EstimateGas, DefaultApiName, estimate);
-                else
-                    gasResult = this.InvokeMethod<string>(ETHRPCMethod.EstimateGas, DefaultApiName, new { to = data.MultiSigAddress, data = GetSendData(new SendCoinData() { ETHMultiSigResult = data.ETHMultiSigResult, ToCoinAddress = data.To, Amount = data.Amount }) });
-                gasAmount = gasResult.Result.LongHEXToDEC() * GasMultiple;
-                totalGas = (gasAmount * data.Price) * GasMultiple;
-            }
-            catch (Exception ex)
-            {
-                if (string.IsNullOrEmpty(data.MultiSigAddress))
-                    Console.WriteLine($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(estimate)}");
-                else
-                    Console.WriteLine($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(new { to = data.MultiSigAddress, data = GetSendData(new SendCoinData() { ETHMultiSigResult = data.ETHMultiSigResult, ToCoinAddress = data.To, Amount = data.Amount }) })}, ETHMultiSigResult:{JsonConvert.SerializeObject(data.ETHMultiSigResult)}, ToCoinAddress:{data.To}, MultiSigAddress:{data.MultiSigAddress}, Amount:{data.Amount}");
-                WriteLog?.Invoke($"EstimateGas:{JsonConvert.SerializeObject(ex)}, Estimate:{JsonConvert.SerializeObject(estimate)}");
-                totalGas = (gasAmount * data.Price);
-            }
+        public virtual ResponseData<decimal> EstimateMinerfee(EstimateMinerfeeData data)
+        { 
+            var totalGas = EstimateGas(data) * this._configuration.GasPrice;
             totalGas = totalGas.UnitToBig(WeiPrecision);
-            EstimateGasInfo estimateGasInfo = new EstimateGasInfo
+            var result = new ResponseData<decimal>
             {
-                GasPrice = data.Price,
-                NeedAmount = totalGas,
-                EstimateGas = gasAmount,
-                OrgEstimateGas = gasResult?.Result?.LongHEXToDEC() ?? 300000
-            };
-            ResponseData<EstimateGasInfo> result = new ResponseData<EstimateGasInfo>
-            {
-                Result = estimateGasInfo
+                Result = totalGas
             };
             return result;
         }
@@ -721,7 +666,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 return result.Result.GetInt64FromHex();
             throw new Exception(result.Error);
         }
-          
+
         /// <summary>
         /// 转币
         /// </summary>
@@ -740,14 +685,12 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 To = multiSigAddress,
                 Value = ""
             };
-            if (data.GasPrice > 0)
+            if (this._configuration.GasPrice > 0)
             {
-                sendTransaction.GasPrice = data.GasPrice.LongDECToHEX();
+                sendTransaction.GasPrice = this._configuration.GasPrice.LongDECToHEX();
             }
-            if (data.EstimateGas > 0)
-            {
-                sendTransaction.Gas = data.EstimateGas.LongDECToHEX();
-            }
+            var gas = this.EstimateGas(new EstimateMinerfeeData() { Amount = data.Amount, From = data.FromAccount, To = data.ToCoinAddress });
+            sendTransaction.Gas = gas.LongDECToHEX();
             sendTransaction.Data = GetSendData(data);
             Console.WriteLine($"SentMultiSigTransaction {JsonConvert.SerializeObject(sendTransaction)}");
             return this.InvokeMethod<string>(ETHRPCMethod.SendFrom, DefaultApiName, sendTransaction, data.FromAccountPassword);

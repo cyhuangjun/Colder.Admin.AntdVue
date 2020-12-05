@@ -214,17 +214,17 @@ namespace Coldairarrow.Business.Market
         public async Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, TransfersRequest request)
         {
             var result = new AjaxResult<TransfersViewDto>();
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(request.CurrencyFrom) || string.IsNullOrEmpty(request.CurrencyTo) || string.IsNullOrEmpty(request.AddressTo) || request.AmountFrom <= 0)
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(request.Currency) || string.IsNullOrEmpty(request.AddressTo) || request.Amount <= 0)
             {
                 result.ErrorCode = ErrorCodeDefine.ParameterInvalid;
                 result.Msg = "Parameter Invalid!";
                 return result;
             }
-            var coin = await this._coinBusiness.GetCoinByCodeAsync(request.CurrencyFrom);
+            var coin = await this._coinBusiness.GetCoinByCodeAsync(request.Currency);
             if (coin == null)
             {
                 result.ErrorCode = ErrorCodeDefine.CoinNotExist;
-                result.Msg = $"Cryptocurrency {request.CurrencyFrom} Not Exist!";
+                result.Msg = $"Cryptocurrency {request.Currency} Not Exist!";
                 return result;
             }
             var user = await this._base_UserBusiness.GetTheDataAsync(userId);
@@ -234,7 +234,7 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "userid not exist.";
                 return result;
             }
-            var balance = await this._userAssetsBusiness.GetBalance(userId, request.CurrencyFrom);
+            var balance = await this._userAssetsBusiness.GetBalance(userId, request.Currency);
             var coinConfig = await this._coinConfigBusiness.GetEntityAsync(userId, coin.Code);
             var fee = 0m; 
             if (coinConfig != null)
@@ -246,33 +246,21 @@ namespace Coldairarrow.Business.Market
                 }
                 else
                 {
-                    fee = request.AmountFrom * coinConfig.CoinOutHandlingFeeRate ?? 0;
+                    fee = request.Amount * coinConfig.CoinOutHandlingFeeRate ?? 0;
                     fee = Math.Round(fee, GlobalData.QuantityPercision);
                     fee = Math.Max(fee, coinConfig.CoinOutHandlingMinFee ?? 0);
                 }
             }
-            if (balance < (request.AmountFrom + fee))
+            if (balance < (request.Amount + fee))
             {
                 result.ErrorCode = ErrorCodeDefine.CryptocurrencyAssetsNotEnought;
-                result.Msg = $"Cryptocurrency {request.CurrencyFrom} Assets Not Enought!";
+                result.Msg = $"Cryptocurrency {request.Currency} Assets Not Enought!";
                 return result;
-            }
-            var estimateResult = await this.EstimateAsync(new EstimateRequest()
-            {
-                Amount = request.AmountFrom,
-                CurrencyFrom = request.CurrencyFrom,
-                CurrencyTo = request.CurrencyTo
-            });
-            if (!estimateResult.Success)
-            {
-                result.ErrorCode = estimateResult.ErrorCode;
-                result.Msg = estimateResult.Msg;
-                return result;
-            }
-            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.CurrencyTo);
+            }            
+            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.Currency);
             if (minAmountConfig != null)
             {
-                if (minAmountConfig.MinTransferAmount > estimateResult.Data.EstimatedAmount)
+                if (minAmountConfig.MinTransferAmount > request.Amount)
                     result.ErrorCode = ErrorCodeDefine.TransferLessThanMinQty;
                 result.Msg = "transfer less than min qty.";
                 return result;
@@ -282,8 +270,8 @@ namespace Coldairarrow.Business.Market
             {
                 CoinID = coin.Id,
                 AssetsWasteBookType = AssetsWasteBookType.CoinOut,
-                ChangeAvailableAmount = -1 * (request.AmountFrom + fee),
-                ChangeFreeAmount = (request.AmountFrom + fee),
+                ChangeAvailableAmount = -1 * (request.Amount + fee),
+                ChangeFrozenAmount = (request.Amount + fee),
                 FeeAmount = fee,
                 RelateID = businessId,
                 UserID = userId
@@ -299,11 +287,9 @@ namespace Coldairarrow.Business.Market
             {
                 Id = businessId,
                 AddressTo = request.AddressTo,
-                AmountFrom = request.AmountFrom,
-                AmountTo = estimateResult.Data.EstimatedAmount,
+                Amount = request.Amount,
                 CreatedAt = DateTime.Now,
-                CurrencyFrom = request.CurrencyFrom,
-                CurrencyTo = request.CurrencyTo,
+                Currency = request.Currency,
                 HandlingFee = fee, 
                 OrderDescription = request.OrderDescription,
                 OrderId = request.OrderId,
@@ -312,7 +298,7 @@ namespace Coldairarrow.Business.Market
                 UserID = userId,
             }; 
 
-            var coinTo = await this._coinBusiness.GetCoinByCodeAsync(request.CurrencyTo);
+            var coinTo = await this._coinBusiness.GetCoinByCodeAsync(request.Currency);
             if (coinTo != null)
             {
                 var coinTransactionOut = new CoinTransactionOut()
@@ -320,7 +306,7 @@ namespace Coldairarrow.Business.Market
                     Id = Guid.NewGuid().GuidTo16String(),
                     Address = transfers.AddressTo,
                     AddressTag = string.Empty,
-                    Amount = transfers.AmountTo,
+                    Amount = transfers.Amount,
                     CoinID = coinTo.Id,
                     CreateTime = DateTime.Now,
                     LastUpdateTime = DateTime.Now,
@@ -338,10 +324,8 @@ namespace Coldairarrow.Business.Market
             result.Data = new TransfersViewDto()
             {
                 AddressTo = transfers.AddressTo,
-                AmountFrom = transfers.AmountFrom,
-                AmountTo = transfers.AmountTo,
-                CurrencyFrom = transfers.CurrencyFrom,
-                CurrencyTo = transfers.CurrencyTo,
+                Amount = transfers.Amount,
+                Currency = transfers.Currency,
                 OrderDescription = transfers.OrderDescription,
                 OrderId = transfers.OrderId,
                 Status = transfers.Status,
@@ -366,10 +350,8 @@ namespace Coldairarrow.Business.Market
                 Data = new TransfersViewDto()
                 {
                     AddressTo = transfers.AddressTo,
-                    AmountFrom = transfers.AmountFrom,
-                    AmountTo = transfers.AmountTo, 
-                    CurrencyFrom = transfers.CurrencyFrom,
-                    CurrencyTo = transfers.CurrencyTo,
+                    Amount = transfers.Amount,
+                    Currency = transfers.Currency,
                     OrderDescription = transfers.OrderDescription,
                     OrderId = transfers.OrderId,
                     Status = transfers.Status,

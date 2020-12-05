@@ -91,10 +91,10 @@ namespace Coldairarrow.Entity.Transaction
         public string SysToUserTXID { set; get; }
 
         public string UserToSysTXID { set; get; }
-
-        [Column(TypeName = "decimal(28, 16)")]
+         
         public string MoveToAddress { set; get; }
 
+        [Column(TypeName = "decimal(28, 16)")]
         public decimal MoveAmount { set; get; }
 
         public DateTime? MoveTime { set; get; }

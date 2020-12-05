@@ -16,6 +16,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Coldairarrow.Util;
 
 namespace Coldairarrow.Scheduler.Job
 {
@@ -103,11 +104,14 @@ namespace Coldairarrow.Scheduler.Job
                     var transactionInfo = cryptocurrencyProvider.GetTransaction(transaction.TXID); 
                     if (transactionInfo == null || !string.IsNullOrEmpty(transactionInfo.Error) || transactionInfo.Result == null) 
                         continue; 
-                    var coinTransaction = transactionInfo.Result;
+                    var coinTransaction = transactionInfo.Result; 
                     if (cryptocurrencyProvider.HasNotBlockCount)
                     {
                         if (coinTransaction.Valid)
                         {
+                            transaction.BlockTime = coinTransaction.BlockTime.ToDateTime_From_JsGetTime();
+                            transaction.MinefeeCoinID = (string.IsNullOrEmpty(coin.TokenCoinID) ? coin.Id : coin.TokenCoinID);
+                            transaction.Minefee = GetMinefee(cryptocurrencyProvider, transaction.TXID);
                             await UpdateTransaction(transaction);
                         }
                     }
@@ -121,11 +125,17 @@ namespace Coldairarrow.Scheduler.Job
                                 var transactionReceipResult = cryptocurrencyProvider.GetTransactionReceipt(coinTransaction.TXId);
                                 if (transactionReceipResult.Result != null && transactionReceipResult.Result.IsSuccess)
                                 {
+                                    transaction.BlockTime = coinTransaction.BlockTime.ToDateTime_From_JsGetTime();
+                                    transaction.MinefeeCoinID = (string.IsNullOrEmpty(coin.TokenCoinID) ? coin.Id : coin.TokenCoinID);
+                                    transaction.Minefee = GetMinefee(cryptocurrencyProvider, transaction.TXID);
                                     await UpdateTransaction(transaction);
                                 }
                             }
                             else
                             {
+                                transaction.BlockTime = coinTransaction.BlockTime.ToDateTime_From_JsGetTime();
+                                transaction.MinefeeCoinID = (string.IsNullOrEmpty(coin.TokenCoinID) ? coin.Id : coin.TokenCoinID);
+                                transaction.Minefee = GetMinefee(cryptocurrencyProvider, transaction.TXID);
                                 await UpdateTransaction(transaction);
                             } 
                         }
@@ -141,10 +151,21 @@ namespace Coldairarrow.Scheduler.Job
             } 
         }
 
+        private decimal GetMinefee(ICryptocurrencyProvider cryptocurrencyProvider, string txId)
+        {
+            var transactionResult = cryptocurrencyProvider.GetTransactionFee(txId, 1);
+            if (string.IsNullOrEmpty(transactionResult.Error) && transactionResult.Result != -1)
+            {
+                decimal fee = Math.Abs(transactionResult.Result);
+                return fee;
+            }
+            return 0;
+        }
+
         private async Task UpdateTransaction(CoinTransactionOut transaction)
         {
             transaction.LastUpdateTime = DateTime.Now;
-            transaction.Status = TransactionStatus.TransactionOut;
+            transaction.Status = TransactionStatus.Finished;
             await this._coinTransactionOutBusiness.UpdateDataAsync(transaction);
         }
     }

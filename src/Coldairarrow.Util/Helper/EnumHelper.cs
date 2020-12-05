@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 
 namespace Coldairarrow.Util
 {
@@ -27,7 +29,36 @@ namespace Coldairarrow.Util
 
             return list;
         }
-
+        /// <summary>  
+        /// 根据枚举的描述生成下拉列表的数据源  
+        /// </summary>  
+        /// <param name="enumType"></param>  
+        /// <returns></returns>  
+        public static List<SelectOption> ToOptionListByDesc(Type enumType)
+        {
+            var listItem = new List<SelectOption>(); 
+            if (enumType.IsEnum)
+            {
+                string[] names = Enum.GetNames(enumType);
+                names.ToList().ForEach(item =>
+                {
+                    string description = string.Empty;
+                    var field = enumType.GetField(item);
+                    object[] arr = field.GetCustomAttributes(typeof(DescriptionAttribute), true); //获取属性字段数组    
+                    description = arr != null && arr.Length > 0 ? ((DescriptionAttribute)arr[0]).Description : item;   //属性描述   
+                    listItem.Add(new SelectOption()
+                    {
+                        value = ((int)Enum.Parse(enumType, item)).ToString(),
+                        text = description
+                    });
+                });
+            }
+            else
+            {
+                throw new ArgumentException("请传入正确的枚举！");
+            }
+            return listItem;
+        }       
         /// <summary>
         /// 多选枚举转为对应文本,逗号隔开
         /// </summary>

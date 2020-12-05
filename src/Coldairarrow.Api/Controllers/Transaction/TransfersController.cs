@@ -1,5 +1,7 @@
 ﻿using Coldairarrow.Business.Transaction;
+using Coldairarrow.Entity.Enum;
 using Coldairarrow.Entity.Transaction;
+using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Util;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -11,53 +13,84 @@ namespace Coldairarrow.Api.Controllers.Transaction
     public class TransfersController : BaseApiController
     {
         #region DI
-
-        public TransfersController(ITransfersBusiness transfersBus)
+        ITransfersBusiness _transfersBus;
+        ICacheDataBusiness _cacheDataBusiness;
+        public TransfersController(ITransfersBusiness transfersBus,
+                                   ICacheDataBusiness cacheDataBusiness)
         {
             _transfersBus = transfersBus;
-        }
-
-        ITransfersBusiness _transfersBus { get; }
-
+            _cacheDataBusiness = cacheDataBusiness;
+        } 
         #endregion
 
         #region 获取
 
         [HttpPost]
-        public async Task<PageResult<Transfers>> GetDataList(PageInput<ConditionDTO> input)
+        public async Task<PageResult<TransfersOutDTO>> GetDataList(PageInput<TransfersInputDTO> input)
         {
             return await _transfersBus.GetDataListAsync(input);
         }
 
         [HttpPost]
-        public async Task<Transfers> GetTheData(IdInputDTO input)
+        public async Task<TransfersOutDTO> GetTheData(IdInputDTO input)
         {
-            return await _transfersBus.GetTheDataAsync(input.id);
+            var theData = await _transfersBus.GetTheDataAsync(input.id);
+            return new TransfersOutDTO()
+            {
+                AddressTo = theData.AddressTo,
+                Amount = theData.Amount,
+                ApproveTime = theData.ApproveTime,
+                ClientOrderId = theData.OrderId,
+                CreatedAt = theData.CreatedAt,
+                Currency = theData.Currency,
+                HandlingFee = theData.HandlingFee,
+                Id = theData.Id,
+                OrderDescription = theData.OrderDescription,
+                Status = theData.Status
+            };
         }
 
+        [HttpPost]
+        public async Task<List<SelectOption>> GetCurrencyList()
+        {
+            var coins = await this._cacheDataBusiness.GetCoinsAsync();
+            List<SelectOption> list = new List<SelectOption>();
+            foreach (var aValue in coins)
+            {
+                list.Add(new SelectOption
+                {
+                    value = aValue.Id,
+                    text = aValue.Code
+                });
+            }
+            return list;
+        }
+
+        [HttpPost]
+        public List<SelectOption> GetTransactionStatusList()
+        {
+            return EnumHelper.ToOptionListByDesc(typeof(TransfersStatus));
+        }
         #endregion
 
         #region 提交
 
         [HttpPost]
-        public async Task SaveData(Transfers data)
+        public async Task PassData(IdInputDTO input)
         {
-            if (data.Id.IsNullOrEmpty())
-            {
-                InitEntity(data);
-
-                await _transfersBus.AddDataAsync(data);
-            }
-            else
-            {
-                await _transfersBus.UpdateDataAsync(data);
+            if (!input.id.IsNullOrEmpty())
+            { 
+                await _transfersBus.Pass(input.id);
             }
         }
 
         [HttpPost]
-        public async Task DeleteData(List<string> ids)
+        public async Task DenyData(IdInputDTO input)
         {
-            await _transfersBus.DeleteDataAsync(ids);
+            if (!input.id.IsNullOrEmpty())
+            {
+                await _transfersBus.Deny(input.id);
+            }
         }
 
         #endregion

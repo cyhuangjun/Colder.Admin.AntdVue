@@ -43,7 +43,7 @@ namespace Coldairarrow.Business.Core
                 ApiSecurityKey = coin.ApiSecurityKey,
                 ApiUrl = coin.ApiUrl,
                 Contract = coin.TokenCoinAddress,
-                WalletSecurityKey = EncryptionHelper.Decode(coin.WalletSecurityKey, coin.Id),
+                WalletSecurityKey = EncryptionHelper.Decode(coin.WalletSecurityKey, coin.Id), 
             };
             if (sysWallet != null)
             {
@@ -68,10 +68,13 @@ namespace Coldairarrow.Business.Core
             switch (coin.ProviderType)
             {
                 case ProviderType.BTC:
+                    config.MinerFeeRate = _evaluateMinefeeRateBusiness.GetBTCFeeRate();
                     return new BTCClientServiceProvider(config);
                 case ProviderType.ETH:
+                    config.GasPrice = _evaluateMinefeeRateBusiness.GetETHGasPrice().Recommend;
                     return new ETHClientServiceProvider(config);
                 case ProviderType.ETHTokenCoin:
+                    config.GasPrice = _evaluateMinefeeRateBusiness.GetETHGasPrice().Recommend;
                     return new ETHTokenClientServiceProvider(config);
             }
             throw new NotImplementedException();
@@ -86,33 +89,11 @@ namespace Coldairarrow.Business.Core
                 ToCoinAddress = sendCoinInfo.ToAddress,
                 ToCoinAddressTag = sendCoinInfo.ToAddressTag,
                 Amount = sendCoinInfo.Quantity,
-                TokenCoinAddress = coin.TokenCoinAddress,
-                TokenCoinKey = coin.TokenCoinKey,
-                GasPrice = sendCoinInfo.GasPrice,
-                EstimateGas = sendCoinInfo.EstimateGas
             };
             if (!string.IsNullOrEmpty(wallet.SecurityKey))
             {
                 sendCoinData.FromAccountPassword = EncryptionHelper.Decode(wallet.SecurityKey, wallet.UserID);
             }
-            if (!string.IsNullOrEmpty(wallet.PrivateKey))
-            {
-                var privateKey = EncryptionHelper.Decode(wallet.PrivateKey, wallet.UserID);
-                sendCoinData.PrivateKey = privateKey;
-            }
-            if (!string.IsNullOrEmpty(wallet.PublicKey))
-            {
-                var publicKey = EncryptionHelper.Decode(wallet.PublicKey, wallet.UserID);
-                sendCoinData.PublicKey = publicKey;
-            }
-            if (coin.Code.ToUpper() == "BTC")
-            {
-                if (sendCoinData.MinerFeeRate == 0)
-                {
-                    sendCoinData.MinerFeeRate = this._evaluateMinefeeRateBusiness.GetBTCFeeRate();
-                }
-            }
-            sendCoinData.ChargeAddress = sendCoinInfo.ToAddress;
             var provider = await GetCryptocurrencyProviderAsync(coin);
             var sendResult = provider.SendTransaction(sendCoinData);
             return sendResult;
@@ -127,12 +108,6 @@ namespace Coldairarrow.Business.Core
                 ToCoinAddress = sendCoinInfo.ToAddress,
                 ToCoinAddressTag = sendCoinInfo.ToAddressTag,
                 Amount = Math.Abs(sendCoinInfo.Quantity),
-                GasPrice = sendCoinInfo.GasPrice,
-                EstimateGas = sendCoinInfo.EstimateGas,
-                TokenCoinAddress = coin.TokenCoinAddress,
-                TokenCoinKey = coin.TokenCoinKey,
-                MinerFeeRate = sendCoinInfo.MinerFeeRate,
-                ChargeAddress = sysWallet?.Address
             };
             if (sysWallet != null)
             {
@@ -142,44 +117,9 @@ namespace Coldairarrow.Business.Core
                 {
                     sendCoinData.FromAccountPassword = Encoding.UTF8.GetString(EncryptionHelper.AESDecrypt(Convert.FromBase64String(sysWallet.SecurityKey), sKey));
                 }
-                if (!string.IsNullOrEmpty(sysWallet.PrivateKey))
-                {
-                    sendCoinData.PrivateKey = EncryptionHelper.Decode(sysWallet.PrivateKey, sysWallet.Address);
-                }
-                if (!string.IsNullOrEmpty(sysWallet.PublicKey))
-                {
-                    sendCoinData.PublicKey = EncryptionHelper.Decode(sysWallet.PublicKey, sysWallet.Address);
-                }
             }
-            ResponseData<string> sendResult = null;
-            switch (coin.ProviderType)
-            {
-                case ProviderType.ETH:
-                case ProviderType.ETHTokenCoin:
-                    decimal? nonceValue = null;
-                    if (!string.IsNullOrEmpty(sendCoinInfo.OldTXID))
-                    {
-                        var transactionResult = coinProvider.GetTransaction(sendCoinInfo.OldTXID);
-                        if (string.IsNullOrEmpty(transactionResult.Error) && transactionResult.Result.Nonce > 0)
-                        {
-                            nonceValue = transactionResult.Result.Nonce;
-                        }
-                    }
-                    sendCoinData.Nonce = nonceValue;
-                    if (sendCoinData.GasPrice == 0)
-                    {
-                        sendCoinData.GasPrice = _evaluateMinefeeRateBusiness.GetETHGasPrice().Recommend;
-                    }
-                    break;
-                case ProviderType.BTC:
-                    if (sendCoinData.MinerFeeRate == 0)
-                    {
-                        sendCoinData.MinerFeeRate = _evaluateMinefeeRateBusiness.GetBTCFeeRate();
-                    }
-                    break;
-            }
-            sendResult = coinProvider.SendTransaction(sendCoinData);
+            ResponseData<string> sendResult = coinProvider.SendTransaction(sendCoinData);
             return sendResult;
-        }
+        } 
     }
 }
