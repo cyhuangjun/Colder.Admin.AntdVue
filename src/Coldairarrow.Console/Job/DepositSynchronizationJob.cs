@@ -333,7 +333,7 @@ namespace Coldairarrow.Scheduler.Job
                         walletTagList.AddRange(tokenAddresList);
                     }
                     var coinID = string.IsNullOrEmpty(coin.TokenCoinID) ? coin.Id : coin.TokenCoinID;
-                    var userWalletList = await this._walletBusiness.GetListAsync(e => e.CoinID == coinID && walletTagList.Contains(e.Address));    
+                    var tenantWalletList = await this._walletBusiness.GetListAsync(e => e.CoinID == coinID && walletTagList.Contains(e.Address));    
                     var transactionIDList = transactionList.Select(f => f.TXId).Distinct().ToList();
                     var addTransactionList = await this._coinTransactionInBusiness.GetListAsync(e => transactionIDList.Contains(e.TXID) && walletTagList.Contains(e.Address));
                          
@@ -351,19 +351,19 @@ namespace Coldairarrow.Scheduler.Job
                         //使用主交易信息
                         if (!item.IsUseTokenTransaction)
                         {
-                            string userID = string.Empty;
+                            string tenantId = string.Empty;
                             string uid = string.Empty;
                             string address = string.Empty;
-                            var userWallet = userWalletList.Where(f => f.Address.Equals(item.Address, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                            if (userWallet != null)
+                            var tenantWallet = tenantWalletList.Where(f => f.Address.Equals(item.Address, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                            if (tenantWallet != null)
                             {
-                                address = userWallet.Address;
-                                userID = userWallet.UserID;
-                                uid = userWallet.UID;
+                                address = tenantWallet.Address;
+                                tenantId = tenantWallet.TenantId;
+                                uid = tenantWallet.UID;
                             }
                             if (string.IsNullOrEmpty(address) && item.ContractTransaction != null)
                             {
-                                bool isAddressExists = userWalletList.Any(f => f.Address.Equals(item.ContractTransaction.ToAddress, StringComparison.InvariantCultureIgnoreCase));
+                                bool isAddressExists = tenantWalletList.Any(f => f.Address.Equals(item.ContractTransaction.ToAddress, StringComparison.InvariantCultureIgnoreCase));
                                 if (!isAddressExists) continue;
                                 var contractTransaction = GetCoinContranctTransactionIn(item.ContractTransaction, coin.Id, now);
                                 contractTransactionList.Add(contractTransaction);
@@ -395,7 +395,7 @@ namespace Coldairarrow.Scheduler.Job
                                 BlockTime = item.BlockTime.ToDateTime_From_JsGetTime(),
                                 CoinID = coin.Id,
                                 CreateTime = now,
-                                UserID = userID,
+                                TenantId = tenantId,
                                 TXID = item.TXId,
                                 Timereceived = item.TimeReceived.ToDateTime_From_JsGetTime(),
                                 Status = TransactionStatus.WaitConfirm,
@@ -410,9 +410,9 @@ namespace Coldairarrow.Scheduler.Job
                                 foreach (var tokenRecord in item.TokenTransactions)
                                 {
                                     string toAddress = string.IsNullOrEmpty(tokenRecord.Address) ? item.Address : tokenRecord.Address;
-                                    var userWallet = userWalletList.FirstOrDefault(f => f.Address == toAddress);
-                                    if (userWallet == null) continue;
-                                    string userID = userWallet.UserID;
+                                    var tenantWallet = tenantWalletList.FirstOrDefault(f => f.Address == toAddress);
+                                    if (tenantWallet == null) continue;
+                                    string tenantId = tenantWallet.TenantId;
                                     var hasAdd = addTransactionList.Any(f => f.TXID == item.TXId && f.Address.Equals(toAddress, StringComparison.InvariantCultureIgnoreCase));
                                     if (hasAdd) continue;
                                     Coin tokenCoin = null;
@@ -444,7 +444,7 @@ namespace Coldairarrow.Scheduler.Job
                                     {
                                         Id = Guid.NewGuid().GuidTo16String(),
                                         CreateTime = now,
-                                        UserID = userID,
+                                        TenantId = tenantId,
                                         TXID = item.TXId,
                                         Timereceived = item.TimeReceived.ToDateTime_From_JsGetTime(),
                                         Status = TransactionStatus.WaitConfirm,
@@ -472,13 +472,11 @@ namespace Coldairarrow.Scheduler.Job
                     }
                     bool flag = coinTransactionList.Any();
                     if (flag)
-                    {
-                        var coinIDList = coinTransactionList.Select(f => f.CoinID).Distinct().ToList();
-                        var userIDList = coinTransactionList.Select(f => f.UserID).Distinct().ToList();
+                    { 
                         foreach (var transaction in coinTransactionList)
                         {
                             var tranCoin = coins.First(e=>e.Id == transaction.CoinID);
-                            var rechargeConfig = await this._coinConfigBusiness.MinAmountAsync(transaction.UserID, tranCoin.Code); 
+                            var rechargeConfig = await this._coinConfigBusiness.MinAmountAsync(transaction.TenantId, tranCoin.Code); 
                             if (rechargeConfig != null)
                             {
                                 if (transaction.Amount < rechargeConfig.MinPaymentAmount)

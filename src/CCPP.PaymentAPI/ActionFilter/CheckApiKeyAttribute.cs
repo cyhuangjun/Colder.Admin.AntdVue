@@ -50,19 +50,19 @@ namespace CCPP.PaymentAPI.ActionFilter
                     return;
                 } 
                 IServiceProvider serviceProvider = context.HttpContext.RequestServices;
-                var base_UserBusiness = serviceProvider.GetService<IBase_UserBusiness>();
-                var user = await base_UserBusiness.GetUserByApiKeyAsync(apiKey);
-                if (user == null)
+                var base_DepartmentBusiness = serviceProvider.GetService<IBase_DepartmentBusiness>();
+                var tenant = await base_DepartmentBusiness.GetTheDataByApiKeyAsync(apiKey);
+                if (tenant == null)
                 {
                     context.Result = Error("illegal operation!", ErrorCodeDefine.IllegalOperation);
                     return;
                 }
-                else if (user.Deleted || (user.IsFrozen ?? false))
+                else if (tenant.Deleted || (tenant.IsFrozen ?? false))
                 {
-                    context.Result = Error("user frozen!", ErrorCodeDefine.UserIsFrozen);
+                    context.Result = Error("tenant frozen!", ErrorCodeDefine.TenantIsFrozen);
                     return;
                 }
-                var securityKey = user.SecretKey;
+                var securityKey = tenant.SecretKey;
                 var signParameters = new Dictionary<string, object>();
                 signParameters.Add("timestamp", timestamp);
                 foreach (var argument in context.ActionArguments)

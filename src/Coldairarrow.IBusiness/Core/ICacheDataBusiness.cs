@@ -12,8 +12,10 @@ namespace Coldairarrow.IBusiness.Core
         Task<List<Coin>> GetCoinsAsync();
         Task<Coin> GetCoinAsync(string coinId);
         Task<Base_User> GetUserAsync(string userId);
+        Task<Base_Department> GetTenantByUserIDAsync(string userId);
+        Task<Base_Department> GetTenantAsync(string tenantId);
 
         Task<Wallet> GetWalletByAddress(string address);
-        Task<Wallet> GetWallet(string userId, string clientUid, string coinId);
+        Task<Wallet> GetWallet(string tenantId, string clientUid, string coinId);
     }
 }

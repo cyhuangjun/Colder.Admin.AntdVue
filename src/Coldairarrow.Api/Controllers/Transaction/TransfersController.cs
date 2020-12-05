@@ -76,21 +76,23 @@ namespace Coldairarrow.Api.Controllers.Transaction
         #region 提交
 
         [HttpPost]
-        public async Task PassData(IdInputDTO input)
+        public async Task<AjaxResult> PassData(IdInputDTO input)
         {
             if (!input.id.IsNullOrEmpty())
             { 
-                await _transfersBus.Pass(input.id);
+              return await _transfersBus.Pass(input.id);
             }
+            return this.Error();
         }
 
         [HttpPost]
-        public async Task DenyData(IdInputDTO input)
+        public async Task<AjaxResult> DenyData(IdInputDTO input)
         {
             if (!input.id.IsNullOrEmpty())
             {
-                await _transfersBus.Deny(input.id);
+                return await _transfersBus.Deny(input.id);
             }
+            return this.Error();
         }
 
         #endregion

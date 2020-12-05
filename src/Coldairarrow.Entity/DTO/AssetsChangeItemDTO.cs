@@ -14,7 +14,7 @@ namespace Coldairarrow.Entity.DTO
         /// <summary>
         /// 用户ID
         /// </summary>
-        public string UserID { get; set; }
+        public string TenantId { get; set; }
         /// <summary>
         /// CoinID
         /// </summary>

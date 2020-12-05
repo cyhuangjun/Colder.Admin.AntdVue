@@ -59,9 +59,9 @@ namespace Coldairarrow.Entity.Transaction
         public DateTime Timereceived { get; set; }
 
         /// <summary>
-        /// UserID
+        /// tenantId
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// CoinID
@@ -119,10 +119,12 @@ namespace Coldairarrow.Entity.Transaction
 
         public MoveStatus MoveStatus { set; get; }
 
+        [Column(TypeName = "decimal(28, 16)")]
         public decimal? CoinInHandlingFee { set; get; }
         /// <summary>
         /// 实际到账金额
         /// </summary>
+        [Column(TypeName = "decimal(28, 16)")]
         public decimal? ArrivalAmount { set; get; }
 
         public string PaymentID { set; get; }

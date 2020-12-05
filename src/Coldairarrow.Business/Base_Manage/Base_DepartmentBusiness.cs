@@ -1,19 +1,26 @@
-﻿using Coldairarrow.Entity.Base_Manage;
+﻿using CacheManager.Core;
+using Coldairarrow.Entity;
+using Coldairarrow.Entity.Base_Manage;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Base_Manage
 {
     public class Base_DepartmentBusiness : BaseBusiness<Base_Department>, IBase_DepartmentBusiness, ITransientDependency
     {
-        public Base_DepartmentBusiness(IDbAccessor db)
+        ICacheManager<object> _cache;
+        public Base_DepartmentBusiness(IDbAccessor db,
+                                        ICacheManager<object> cache)
             : base(db)
         {
+            _cache = cache;
         }
 
         #region 外部接口
@@ -83,6 +90,35 @@ namespace Coldairarrow.Business.Base_Manage
             await DeleteAsync(ids);
         }
 
+        public async Task<Base_DepartmentDTO> GetTheDataByApiKeyAsync(string apiKey)
+        {
+            if (apiKey.IsNullOrEmpty())
+                return null;
+            else
+            {
+                string cacheKey = $"Cache_APIKEY_{apiKey}";
+                if (this._cache.Exists(cacheKey))
+                {
+                    var cache = this._cache.Get(cacheKey).ChangeType<Base_DepartmentDTO>();
+                    return await Task.FromResult(cache);
+                }
+                else
+                {
+                    var theData = await this.GetEntityAsync(e => e.ApiKey == apiKey);
+                    Expression<Func<Base_Department, Base_DepartmentDTO>> select = (a) => new Base_DepartmentDTO
+                    {
+                    };
+                    select = select.BuildExtendSelectExpre();
+                    var q = from a in GetIQueryable().AsExpandable()
+                            select @select.Invoke(a);
+                    q = q.Where(x => x.ApiKey == apiKey);
+                    var result = await q.FirstOrDefaultAsync();
+                    if (result != null)
+                        this._cache.Add(cacheKey, result);
+                    return result;
+                }
+            }
+        }
         #endregion
     }
 }

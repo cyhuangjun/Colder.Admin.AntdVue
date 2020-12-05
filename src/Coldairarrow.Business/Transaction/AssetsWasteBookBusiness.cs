@@ -1,4 +1,4 @@
-﻿using Coldairarrow.Entity.Foundation;
+﻿using Coldairarrow.Entity.Transaction;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
@@ -8,27 +8,27 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 
-namespace Coldairarrow.Business.Foundation
+namespace Coldairarrow.Business.Transaction
 {
-    public class UserCoinConfigBusiness : BaseBusiness<UserCoinConfig>, IUserCoinConfigBusiness, ITransientDependency
+    public class AssetsWasteBookBusiness : BaseBusiness<AssetsWasteBook>, IAssetsWasteBookBusiness, ITransientDependency
     {
-        public UserCoinConfigBusiness(IDbAccessor db)
+        public AssetsWasteBookBusiness(IDbAccessor db)
             : base(db)
         {
         }
 
         #region 外部接口
 
-        public async Task<PageResult<UserCoinConfig>> GetDataListAsync(PageInput<ConditionDTO> input)
+        public async Task<PageResult<AssetsWasteBook>> GetDataListAsync(PageInput<ConditionDTO> input)
         {
             var q = GetIQueryable();
-            var where = LinqHelper.True<UserCoinConfig>();
+            var where = LinqHelper.True<AssetsWasteBook>();
             var search = input.Search;
 
             //筛选
             if (!search.Condition.IsNullOrEmpty() && !search.Keyword.IsNullOrEmpty())
             {
-                var newWhere = DynamicExpressionParser.ParseLambda<UserCoinConfig, bool>(
+                var newWhere = DynamicExpressionParser.ParseLambda<AssetsWasteBook, bool>(
                     ParsingConfig.Default, false, $@"{search.Condition}.Contains(@0)", search.Keyword);
                 where = where.And(newWhere);
             }
@@ -36,26 +36,15 @@ namespace Coldairarrow.Business.Foundation
             return await q.Where(where).GetPageResultAsync(input);
         }
 
-        public async Task<UserCoinConfig> GetTheDataAsync(string id)
+        public async Task<AssetsWasteBook> GetTheDataAsync(string id)
         {
             return await GetEntityAsync(id);
         }
 
-        public async Task AddDataAsync(UserCoinConfig data)
+        public async Task AddDataAsync(AssetsWasteBook data)
         {
             await InsertAsync(data);
         }
-
-        public async Task UpdateDataAsync(UserCoinConfig data)
-        {
-            await UpdateAsync(data);
-        }
-
-        public async Task DeleteDataAsync(List<string> ids)
-        {
-            await DeleteAsync(ids);
-        }
-
         #endregion
 
         #region 私有成员

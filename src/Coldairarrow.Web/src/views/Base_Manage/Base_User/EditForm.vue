@@ -27,12 +27,12 @@
         <a-form-model-item label="生日" prop="Birthday">
           <a-date-picker v-model="entity.Birthday" format="YYYY-MM-DD" />
         </a-form-model-item>
-        <a-form-model-item label="部门" prop="DepartmentId">
+        <a-form-model-item label="商户" prop="DepartmentId">
           <a-tree-select
             v-model="entity.DepartmentId"
             allowClear
             :treeData="DepartmentIdTreeData"
-            placeholder="请选择部门"
+            placeholder="请选择商户"
             treeDefaultExpandAll
           ></a-tree-select>
         </a-form-model-item>

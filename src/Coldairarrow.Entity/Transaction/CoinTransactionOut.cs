@@ -19,9 +19,9 @@ namespace Coldairarrow.Entity.Transaction
         public String Id { get; set; }
 
         /// <summary>
-        /// UserID
+        /// tenantId
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// Address
@@ -75,6 +75,7 @@ namespace Coldairarrow.Entity.Transaction
 
         public string MinefeeCoinID { set; get; }
 
+        [Column(TypeName = "decimal(28, 16)")]
         public decimal Minefee { set; get; }
 
         /// <summary>

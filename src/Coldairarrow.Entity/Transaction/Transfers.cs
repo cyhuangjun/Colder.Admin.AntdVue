@@ -19,9 +19,9 @@ namespace Coldairarrow.Entity.Transaction
         public String Id { get; set; }
 
         /// <summary>
-        /// 用户ID
+        /// TenantId
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// OrderId

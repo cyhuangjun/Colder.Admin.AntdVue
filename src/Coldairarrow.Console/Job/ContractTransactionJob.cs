@@ -168,7 +168,7 @@ namespace Coldairarrow.Scheduler.Job
                                 BlockTime = coinInTransaction.BlockTime.ToDateTime_From_JsGetTime(),
                                 CoinID = tokenCoin.Id,
                                 CreateTime = DateTime.Now,
-                                UserID = customerWallet.UserID,
+                                TenantId = customerWallet.TenantId,
                                 TXID = coinInTransaction.TXId,
                                 Timereceived = coinInTransaction.TimeReceived.ToDateTime_From_JsGetTime(),
                                 Status = TransactionStatus.WaitConfirm,
@@ -176,7 +176,7 @@ namespace Coldairarrow.Scheduler.Job
                             };
                             if (!existedTransactionIns.Any(f => f.TXID == transaction.TXID && f.CoinID == transaction.CoinID))
                             {
-                                var rechargeConfig = await this._coinConfigBusiness.MinAmountAsync(transaction.UserID, tokenCoin.Code);
+                                var rechargeConfig = await this._coinConfigBusiness.MinAmountAsync(transaction.TenantId, tokenCoin.Code);
                                 if (rechargeConfig != null)
                                 {
                                     if (transaction.Amount < rechargeConfig.MinPaymentAmount)

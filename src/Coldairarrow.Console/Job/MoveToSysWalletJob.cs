@@ -279,7 +279,7 @@ namespace Coldairarrow.Scheduler.Job
             {
                 string securityKey = customerWallet.SecurityKey;
                 if (!string.IsNullOrEmpty(securityKey))
-                    securityKey = EncryptionHelper.Decode(securityKey, customerWallet.UserID);
+                    securityKey = EncryptionHelper.Decode(securityKey, customerWallet.TenantId);
                 var estimateGasData = new EstimateMinerfeeData
                 {
                     From = customerWallet.Address,

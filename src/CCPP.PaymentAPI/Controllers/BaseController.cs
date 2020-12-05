@@ -9,22 +9,22 @@ namespace CCPP.PaymentAPI.Controllers
     /// 基控制器
     /// </summary>
     public class BaseController : ControllerBase
-    { 
-        private readonly IBase_UserBusiness _base_UserBusiness;
+    {
+        private readonly IBase_DepartmentBusiness _base_DepartmentBusiness;
 
-        public BaseController(IBase_UserBusiness base_UserBusiness)
+        public BaseController(IBase_DepartmentBusiness base_DepartmentBusiness)
         {
-            this._base_UserBusiness = base_UserBusiness;
+            this._base_DepartmentBusiness = base_DepartmentBusiness;
         }   
 
-        protected Base_UserDTO CurrentUser
+        protected Base_DepartmentDTO CurrentTenant
         {
             get
             {
                 string apiKey = this.HttpContext.Request.Headers[GlobalData.HTTPHEADAPIKEY];
                 if (apiKey.IsNullOrEmpty())
                     return null;
-                var task = this._base_UserBusiness.GetUserByApiKeyAsync(apiKey);
+                var task = this._base_DepartmentBusiness.GetTheDataByApiKeyAsync(apiKey);
                 task.Wait();
                 return task.Result;
             }
