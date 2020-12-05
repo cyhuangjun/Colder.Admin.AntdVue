@@ -32,7 +32,7 @@ namespace Coldairarrow.Business.Market
         ICurrencyBusiness _currencyBusiness;
         ICoinBusiness _coinBusiness;
         ICryptocurrencyBusiness _cryptocurrencyBusiness;
-        IUserAssetsBusiness _userAssetsBusiness;
+        IAssetsBusiness _assetsBusiness;
         IBase_UserBusiness _base_UserBusiness;
         ICoinConfigBusiness _coinConfigBusiness;
         ICacheDataBusiness _cacheDataBusiness;
@@ -41,7 +41,7 @@ namespace Coldairarrow.Business.Market
                                 ICurrencyBusiness currencyBusiness,
                                 ICoinBusiness coinBusiness,
                                 ICryptocurrencyBusiness cryptocurrencyBusiness,
-                                IUserAssetsBusiness userAssetsBusiness,
+                                IAssetsBusiness userAssetsBusiness,
                                 IBase_UserBusiness base_UserBusiness,
                                 ICoinConfigBusiness coinConfigBusiness,
                                 ICoinTransactionOutBusiness coinTransactionOutBusiness,
@@ -52,7 +52,7 @@ namespace Coldairarrow.Business.Market
             _currencyBusiness = currencyBusiness;
             _coinBusiness = coinBusiness;
             _cryptocurrencyBusiness = cryptocurrencyBusiness;
-            _userAssetsBusiness = userAssetsBusiness;
+            _assetsBusiness = userAssetsBusiness;
             _base_UserBusiness = base_UserBusiness;
             _coinConfigBusiness = coinConfigBusiness;
             _cacheDataBusiness = cacheDataBusiness;
@@ -100,7 +100,7 @@ namespace Coldairarrow.Business.Market
             return cacheKey;
         }
 
-        public async Task<AjaxResult<MinAmountViewDto>> MinAmountAsync(string userId, string currency)
+        public async Task<AjaxResult<MinAmountViewDto>> MinAmountAsync(string tenantId, string currency)
         {
             var result = new AjaxResult<MinAmountViewDto>() { Data = new MinAmountViewDto() { Currency = currency } }; 
             if (string.IsNullOrEmpty(currency))
@@ -109,7 +109,7 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "currency cannot be empty!";
                 return result;
             }
-            var coinConfig = await this._coinConfigBusiness.MinAmountAsync(userId, currency);
+            var coinConfig = await this._coinConfigBusiness.MinAmountAsync(tenantId, currency);
             if(coinConfig == null)
             {
                 result.Success = false;
@@ -125,7 +125,7 @@ namespace Coldairarrow.Business.Market
             return result;
         }
 
-        public async Task<AjaxResult<PaymentViewDto>> PaymentAsync(string userId, PaymentRequest request)
+        public async Task<AjaxResult<PaymentViewDto>> PaymentAsync(string tenantId, PaymentRequest request)
         {
             var result = new AjaxResult<PaymentViewDto>();
             if (string.IsNullOrEmpty(request.UID))
@@ -153,14 +153,14 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "Wallet maintenancing!";
                 return result;
             }
-            var user = await this._base_UserBusiness.GetTheDataAsync(userId);
-            if (user == null)
+            var tenant = await this._cacheDataBusiness.GetTenantAsync(tenantId);
+            if (tenant == null)
             {
-                result.ErrorCode = ErrorCodeDefine.UserIDNotExist;
-                result.Msg = "userid not exist.";
+                result.ErrorCode = ErrorCodeDefine.TenantIDRequired;
+                result.Msg = "tenantId not exist.";
                 return result;
             }
-            var wallet = await this._cacheDataBusiness.GetWallet(userId, request.UID, coin.Id);
+            var wallet = await this._cacheDataBusiness.GetWallet(tenantId, request.UID, coin.Id);
             if (wallet == null)
             {
                 var cryptocurrencyProvider = await _cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
@@ -181,19 +181,19 @@ namespace Coldairarrow.Business.Market
                 {
                     Id = walletId,
                     Address = addressResult.Result.Address,
-                    PrivateKey = EncryptionHelper.Encode(addressResult.Result.PrivateKey, userId),
-                    SecurityKey = !string.IsNullOrEmpty(securityKey) ? EncryptionHelper.Encode(securityKey, userId) : string.Empty,
-                    PublicKey = EncryptionHelper.Encode(addressResult.Result.PublicKey, userId),
+                    PrivateKey = EncryptionHelper.Encode(addressResult.Result.PrivateKey, tenantId),
+                    SecurityKey = !string.IsNullOrEmpty(securityKey) ? EncryptionHelper.Encode(securityKey, tenantId) : string.Empty,
+                    PublicKey = EncryptionHelper.Encode(addressResult.Result.PublicKey, tenantId),
                     CoinID = coin.Id,
-                    UserID = userId,
+                    TenantId = tenantId,
                     UID = request.UID,
                     CreateTime = DateTime.Now,
                     Hash = EncryptionHelper.Encode(addressResult.Result.Address, walletId)
                 };
                 await this._db.InsertAsync(wallet);
             }
-            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.PayCurrency);
-            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(userId, coin.Code);
+            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(tenantId, request.PayCurrency);
+            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(tenantId, coin.Code);
             result.Success = true;
             result.ErrorCode = ErrorCodeDefine.Success;
             result.Data = new PaymentViewDto()
@@ -211,10 +211,10 @@ namespace Coldairarrow.Business.Market
         }
 
         [Transactional]
-        public async Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, TransfersRequest request)
+        public async Task<AjaxResult<TransfersViewDto>> TransfersAsync(string tenantId, TransfersRequest request)
         {
             var result = new AjaxResult<TransfersViewDto>();
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(request.Currency) || string.IsNullOrEmpty(request.AddressTo) || request.Amount <= 0)
+            if (string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(request.Currency) || string.IsNullOrEmpty(request.AddressTo) || request.Amount <= 0)
             {
                 result.ErrorCode = ErrorCodeDefine.ParameterInvalid;
                 result.Msg = "Parameter Invalid!";
@@ -227,15 +227,15 @@ namespace Coldairarrow.Business.Market
                 result.Msg = $"Cryptocurrency {request.Currency} Not Exist!";
                 return result;
             }
-            var user = await this._base_UserBusiness.GetTheDataAsync(userId);
-            if (user == null)
+            var tenant = await this._cacheDataBusiness.GetTenantAsync(tenantId);
+            if (tenant == null)
             {
-                result.ErrorCode = ErrorCodeDefine.UserIDNotExist;
-                result.Msg = "userid not exist.";
+                result.ErrorCode = ErrorCodeDefine.TenantIDRequired;
+                result.Msg = "tenantId not exist.";
                 return result;
             }
-            var balance = await this._userAssetsBusiness.GetBalance(userId, request.Currency);
-            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(userId, coin.Code);
+            var balance = await this._assetsBusiness.GetBalance(tenantId, request.Currency);
+            var coinConfig = await this._coinConfigBusiness.GetEntityAsync(tenantId, coin.Code);
             var fee = 0m; 
             if (coinConfig != null)
             {
@@ -257,7 +257,7 @@ namespace Coldairarrow.Business.Market
                 result.Msg = $"Cryptocurrency {request.Currency} Assets Not Enought!";
                 return result;
             }            
-            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(userId, request.Currency);
+            var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(tenantId, request.Currency);
             if (minAmountConfig != null)
             {
                 if (minAmountConfig.MinTransferAmount > request.Amount)
@@ -274,9 +274,9 @@ namespace Coldairarrow.Business.Market
                 ChangeFrozenAmount = (request.Amount + fee),
                 FeeAmount = fee,
                 RelateID = businessId,
-                UserID = userId
+                TenantId = tenantId
             };
-            var assetsResult = await this._userAssetsBusiness.UpdateAssets(assetsChangeItemDTO);
+            var assetsResult = await this._assetsBusiness.UpdateAssets(assetsChangeItemDTO);
             if (!assetsResult.Success)
             {
                 result.ErrorCode = assetsResult.ErrorCode;
@@ -295,7 +295,7 @@ namespace Coldairarrow.Business.Market
                 OrderId = request.OrderId,
                 Status = TransfersStatus.Waiting,
                 UpdatedAt = DateTime.Now,
-                UserID = userId,
+                TenantId = tenantId,
             }; 
 
             var coinTo = await this._coinBusiness.GetCoinByCodeAsync(request.Currency);
@@ -309,10 +309,9 @@ namespace Coldairarrow.Business.Market
                     Amount = transfers.Amount,
                     CoinID = coinTo.Id,
                     CreateTime = DateTime.Now,
-                    LastUpdateTime = DateTime.Now,
-                    LastUpdateUserID = userId,
+                    LastUpdateTime = DateTime.Now, 
                     Status = TransactionStatus.Apply,
-                    UserID = userId,
+                    TenantId = tenantId,
                 };
                 await _db.InsertAsync(coinTransactionOut);
                 transfers.TransactionOutID = coinTransactionOut.Id;
@@ -334,14 +333,14 @@ namespace Coldairarrow.Business.Market
             return result;
         }
 
-        public async Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, string withdrawId)
+        public async Task<AjaxResult<TransfersViewDto>> TransfersAsync(string tenantId, string withdrawId)
         {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(withdrawId))
+            if (string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(withdrawId))
                 return new AjaxResult<TransfersViewDto>() { ErrorCode = ErrorCodeDefine.ParameterInvalid, Success = false, Msg = "Parameter Invalid!" };
             var transfers = await this._db.GetEntityAsync<Transfers>(withdrawId);
             if (transfers == null)
                 return new AjaxResult<TransfersViewDto>() { ErrorCode = ErrorCodeDefine.ParameterInvalid, Success = false, Msg = "Parameter Invalid!" };
-            if (transfers.UserID != userId)
+            if (transfers.TenantId != tenantId)
                 return new AjaxResult<TransfersViewDto>() { ErrorCode = ErrorCodeDefine.IllegalOperation, Success = false, Msg = "Illegal Operation!" };
             return new AjaxResult<TransfersViewDto>()
             {

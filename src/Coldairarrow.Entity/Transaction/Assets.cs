@@ -7,8 +7,8 @@ namespace Coldairarrow.Entity.Transaction
     /// <summary>
     /// 站点资产
     /// </summary>
-    [Table("UserAssets")]
-    public class UserAssets
+    [Table("Assets")]
+    public class Assets
     {
         /// <summary>
         /// 主键
@@ -18,7 +18,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// 
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         ///  

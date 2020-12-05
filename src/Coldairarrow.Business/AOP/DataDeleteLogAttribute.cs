@@ -1,6 +1,7 @@
 ﻿using Coldairarrow.IBusiness;
 using Coldairarrow.Util;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
@@ -19,7 +20,7 @@ namespace Coldairarrow.Business
         public override async Task Befor(IAOPContext context)
         {
             List<string> ids = context.Arguments[0] as List<string>;
-            var q = context.InvocationTarget.GetType().GetMethod("GetIQueryable").Invoke(context.InvocationTarget, new object[] { }) as IQueryable;
+            var q = context.InvocationTarget.GetType().GetMethod("GetIQueryable", new Type[] { }).Invoke(context.InvocationTarget, new object[] { }) as IQueryable;
             var deleteList = q.Where("@0.Contains(Id)", ids).CastToList<object>();
 
             _names = string.Join(",", deleteList.Select(x => x.GetPropertyValue(_nameField)?.ToString()));

@@ -81,15 +81,44 @@ namespace Coldairarrow.Business.Core
             return result;
         }
 
-        public async Task<Wallet> GetWallet(string userId, string clientUid, string coinId)
+        public async Task<Wallet> GetWallet(string tenantId, string clientUid, string coinId)
         {
-            string cacheKey = $"Cache_{GetType().FullName}_GetWallet_{userId}_{clientUid}_{coinId}_";
+            string cacheKey = $"Cache_{GetType().FullName}_GetWallet_{tenantId}_{clientUid}_{coinId}_";
             if (this._cache.Exists(cacheKey))
             {
                 var cache = this._cache.Get(cacheKey).ChangeType<Wallet>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Wallet>().Where(e => e.UserID == userId && e.UID == clientUid && e.CoinID == coinId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Wallet>().Where(e => e.TenantId == tenantId && e.UID == clientUid && e.CoinID == coinId).FirstOrDefaultAsync();
+            if (result != null)
+                this._cache.Add(cacheKey, result);
+            return result;
+        }
+
+        public async Task<Base_Department> GetTenantByUserIDAsync(string userId)
+        {
+            string cacheKey = $"Cache_{GetType().FullName}_GetTenantByUserIDAsync_{userId}_";
+            if (this._cache.Exists(cacheKey))
+            {
+                var cache = this._cache.Get(cacheKey).ChangeType<Base_Department>();
+                return await Task.FromResult(cache);
+            }
+            var user = await this.GetUserAsync(userId);
+            var result = await this._db.GetIQueryable<Base_Department>().Where(e => e.Id == user.DepartmentId).FirstOrDefaultAsync();
+            if (result != null)
+                this._cache.Add(cacheKey, result);
+            return result;
+        }
+
+        public async Task<Base_Department> GetTenantAsync(string tenantId)
+        {
+            string cacheKey = $"Cache_{GetType().FullName}_GetTenantAsync_{tenantId}_";
+            if (this._cache.Exists(cacheKey))
+            {
+                var cache = this._cache.Get(cacheKey).ChangeType<Base_Department>();
+                return await Task.FromResult(cache);
+            } 
+            var result = await this._db.GetIQueryable<Base_Department>().Where(e => e.Id == tenantId).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;

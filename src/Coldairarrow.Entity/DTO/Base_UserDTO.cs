@@ -29,19 +29,8 @@ namespace Coldairarrow.Entity
         }
         public string DepartmentName { get; set; }
         public string SexText { get => Sex.GetDescription(); }
-        public string BirthdayText { get => Birthday?.ToString("yyyy-MM-dd"); }
+        public string BirthdayText { get => Birthday?.ToString("yyyy-MM-dd"); } 
 
-        public new string SecretKey
-        {
-            set
-            {
-                base.SecretKey = value;
-            }
-            get
-            {
-                if (base.SecretKey.IsNullOrEmpty()) return string.Empty;
-                return EncryptionHelper.Decode(base.SecretKey, this.ApiKey);
-            }
-        }
+        public Base_DepartmentDTO Tenant { set; get; }
     }
 }

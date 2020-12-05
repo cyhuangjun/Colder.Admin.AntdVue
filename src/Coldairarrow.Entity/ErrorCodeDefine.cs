@@ -126,7 +126,14 @@ namespace Coldairarrow.Entity
         /// 钱包服务错误
         /// </summary>
         public const int WalletServceError = 40028;
-
+        /// <summary>
+        /// 商户ID不能为空
+        /// </summary>
+        public const int TenantIDRequired = 40029;
+        /// <summary>
+        /// 商户被冻结
+        /// </summary>
+        public const int TenantIsFrozen = 40030;
         #region 基础
         /// <summary>
         /// 处理成功

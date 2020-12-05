@@ -40,9 +40,9 @@ namespace Coldairarrow.Scheduler.Job
         private readonly IWalletBusiness _walletBusiness;
         private readonly ICoinTransactionInBusiness _coinTransactionInBusiness;
         private readonly ICoinConfigBusiness _coinConfigBusiness;
-        private readonly IUserAssetsWasteBookBusiness _userAssetsWasteBookBusiness;
+        private readonly IAssetsWasteBookBusiness _userAssetsWasteBookBusiness;
         private readonly IBase_UserBusiness _base_UserBusiness;
-        private readonly IUserAssetsBusiness _userAssetsBusiness;
+        private readonly IAssetsBusiness _userAssetsBusiness;
         #endregion
 
         public DepositAccountingJob()
@@ -54,9 +54,9 @@ namespace Coldairarrow.Scheduler.Job
             this._walletBusiness = this._container.Resolve<IWalletBusiness>();
             this._coinTransactionInBusiness = this._container.Resolve<ICoinTransactionInBusiness>();
             this._coinConfigBusiness = this._container.Resolve<ICoinConfigBusiness>();
-            this._userAssetsWasteBookBusiness = this._container.Resolve<IUserAssetsWasteBookBusiness>();
+            this._userAssetsWasteBookBusiness = this._container.Resolve<IAssetsWasteBookBusiness>();
             this._base_UserBusiness = this._container.Resolve<IBase_UserBusiness>();
-            this._userAssetsBusiness = this._container.Resolve<IUserAssetsBusiness>();
+            this._userAssetsBusiness = this._container.Resolve<IAssetsBusiness>();
             this._transactionContainer = this._container.Resolve<TransactionContainer>();
         }
 
@@ -167,8 +167,7 @@ namespace Coldairarrow.Scheduler.Job
         {
             if (transactionIns.Any())
             {
-                var needCoinIds = transactionIns.Select(f => f.CoinID).Distinct().ToList();
-                var allUserIds = transactionIns.Select(f => f.UserID).Distinct().ToList();
+                var needCoinIds = transactionIns.Select(f => f.CoinID).Distinct().ToList();  
                 var txIDList = transactionIns.Select(f => f.TXID).Distinct();
                 //系统移动到用户地址上的矿工费
                 var moveTokenRecordList = await this._coinTransactionInBusiness.GetListAsync(e => txIDList.Contains(e.SysToUserTXID));
@@ -189,8 +188,8 @@ namespace Coldairarrow.Scheduler.Job
                     //实际到账
                     decimal receiveQuantity = item.Amount;
                     var coin = coins.First(e => e.Id == item.CoinID);
-                    var coinConfig = await this._coinConfigBusiness.GetEntityAsync(item.UserID, coin.Code); 
-                    var minimumDeposit = this._coinConfigBusiness.MinAmountAsync(item.UserID, coin.Code);
+                    var coinConfig = await this._coinConfigBusiness.GetEntityAsync(item.TenantId, coin.Code); 
+                    var minimumDeposit = this._coinConfigBusiness.MinAmountAsync(item.TenantId, coin.Code);
                     if (coinConfig != null)
                     {
                         // 固定手续费
@@ -215,7 +214,7 @@ namespace Coldairarrow.Scheduler.Job
                     }
                     else
                     {
-                        var configNullException = new Exception($"没有获取到提现充值设置:用户ID:{item.UserID},虚拟币Code:{coin.Code},交易ID:{item.TXID}");
+                        var configNullException = new Exception($"没有获取到提现充值设置:商户ID:{item.TenantId},虚拟币Code:{coin.Code},交易ID:{item.TXID}");
                         this._logger.LogError(configNullException, configNullException.Message);
                         configNullException.ToExceptionless().Submit();
                         continue;
@@ -227,7 +226,7 @@ namespace Coldairarrow.Scheduler.Job
                         ChangeAvailableAmount = receiveQuantity,
                         FeeAmount = fee,
                         RelateID = item.Id,
-                        UserID = item.UserID,
+                        TenantId = item.TenantId,
                         Remark = "转入虚拟币,手续费:" + fee
                     };
                     var assetsResult = await this._userAssetsBusiness.UpdateAssets(assetsChangeItem);

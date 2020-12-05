@@ -11,9 +11,9 @@ namespace Coldairarrow.IBusiness.Market
     public interface IMarketBusiness
     {
         Task<AjaxResult<CurrencyEstimateViewDto>> EstimateAsync(EstimateRequest request);
-        Task<AjaxResult<PaymentViewDto>> PaymentAsync(string userId, PaymentRequest request);
-        Task<AjaxResult<MinAmountViewDto>> MinAmountAsync(string userId, string currency);
-        Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, TransfersRequest request);
-        Task<AjaxResult<TransfersViewDto>> TransfersAsync(string userId, string withdrawId);
+        Task<AjaxResult<PaymentViewDto>> PaymentAsync(string tenantId, PaymentRequest request);
+        Task<AjaxResult<MinAmountViewDto>> MinAmountAsync(string tenantId, string currency);
+        Task<AjaxResult<TransfersViewDto>> TransfersAsync(string tenantId, TransfersRequest request);
+        Task<AjaxResult<TransfersViewDto>> TransfersAsync(string tenantId, string withdrawId);
     }
 }

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Transaction
 {
-    public interface IUserAssetsBusiness
+    public interface IAssetsBusiness
     {
-        Task<decimal> GetBalance(string userId, string coinCode);
+        Task<decimal> GetBalance(string tenantId, string coinCode);
 
         Task<AjaxResult> UpdateAssets(params AssetsChangeItemDTO[] assetsChangeItems);
     }

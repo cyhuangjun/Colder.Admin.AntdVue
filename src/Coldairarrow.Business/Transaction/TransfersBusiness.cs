@@ -23,10 +23,10 @@ namespace Coldairarrow.Business.Transaction
         private readonly ICacheDataBusiness _cacheDataBusiness;
         private readonly ICryptocurrencyBusiness _cryptocurrencyBusiness;
         private readonly IOperator _operator;
-        private readonly IUserAssetsBusiness _userAssetsBusiness;
+        private readonly IAssetsBusiness _userAssetsBusiness;
         public TransfersBusiness(IDbAccessor db,
                                 IOperator @operator,
-                                IUserAssetsBusiness userAssetsBusiness,
+                                IAssetsBusiness userAssetsBusiness,
                                 ICacheDataBusiness cacheDataBusiness)
             : base(db)
         {
@@ -203,7 +203,7 @@ namespace Coldairarrow.Business.Transaction
                 ChangeFrozenAmount = -1 * (transactionOut.Amount + fee),
                 FeeAmount = -fee,
                 RelateID = transfers.Id,
-                UserID = transfers.UserID
+                TenantId = transfers.TenantId
             };
             var assetsResult = await this._userAssetsBusiness.UpdateAssets(assetsChangeItemDTO);
             if (!assetsResult.Success)
@@ -290,7 +290,7 @@ namespace Coldairarrow.Business.Transaction
                 ChangeFrozenAmount = -1 * (transactionOut.Amount + fee),
                 FeeAmount = 0,
                 RelateID = transfers.Id,
-                UserID = transfers.UserID
+                TenantId = transfers.TenantId
             };
             var assetsResult = await this._userAssetsBusiness.UpdateAssets(assetsChangeItemDTO);
             return assetsResult;

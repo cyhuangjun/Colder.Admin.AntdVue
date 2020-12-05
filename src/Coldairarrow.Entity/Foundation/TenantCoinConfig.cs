@@ -7,8 +7,8 @@ namespace Coldairarrow.Entity.Foundation
     /// <summary>
     /// UserCoinConfig
     /// </summary>
-    [Table("UserCoinConfig")]
-    public class UserCoinConfig
+    [Table("TenantCoinConfig")]
+    public class TenantCoinConfig
     {
 
         /// <summary>
@@ -18,9 +18,9 @@ namespace Coldairarrow.Entity.Foundation
         public String ID { get; set; }
 
         /// <summary>
-        /// UserID
+        /// TenantId
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// Currency

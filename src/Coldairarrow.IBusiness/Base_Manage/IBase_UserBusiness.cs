@@ -13,8 +13,7 @@ namespace Coldairarrow.Business.Base_Manage
         Task<Base_UserDTO> GetTheDataAsync(string id);
         Task AddDataAsync(UserEditInputDTO input);
         Task UpdateDataAsync(UserEditInputDTO input);
-        Task DeleteDataAsync(List<string> ids);
-        Task<Base_UserDTO> GetUserByApiKeyAsync(string id);
+        Task DeleteDataAsync(List<string> ids); 
     }
 
     [Map(typeof(Base_User))]
@@ -27,8 +26,7 @@ namespace Coldairarrow.Business.Base_Manage
     public class Base_UsersInputDTO
     {
         public bool all { get; set; }
-        public string userId { get; set; }
-        public string apiKey { set; get; }
+        public string userId { get; set; } 
         public string keyword { get; set; }
     }
 }

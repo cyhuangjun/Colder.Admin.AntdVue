@@ -92,7 +92,7 @@ namespace Coldairarrow.Business.Core
             };
             if (!string.IsNullOrEmpty(wallet.SecurityKey))
             {
-                sendCoinData.FromAccountPassword = EncryptionHelper.Decode(wallet.SecurityKey, wallet.UserID);
+                sendCoinData.FromAccountPassword = EncryptionHelper.Decode(wallet.SecurityKey, wallet.TenantId);
             }
             var provider = await GetCryptocurrencyProviderAsync(coin);
             var sendResult = provider.SendTransaction(sendCoinData);

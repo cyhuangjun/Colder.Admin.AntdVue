@@ -4,6 +4,7 @@ using Coldairarrow.Business.Foundation;
 using Coldairarrow.Entity;
 using Coldairarrow.Entity.DTO;
 using Coldairarrow.Entity.Transaction;
+using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using Microsoft.EntityFrameworkCore;
@@ -14,31 +15,34 @@ using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Transaction
 {
-    public class UserAssetsBusiness : BaseBusiness<UserAssets>, IUserAssetsBusiness, ITransientDependency
+    public class AssetsBusiness : BaseBusiness<Assets>, IAssetsBusiness, ITransientDependency
     {
         const string RedisLockAssetsKey = "LockAssets";
         IDbAccessor _db;
         ICacheManager<object> _cache;
         ICoinBusiness _coinBusiness;
         IBase_UserBusiness _base_UserBusiness;
-        public UserAssetsBusiness(IDbAccessor db,
+        ICacheDataBusiness _cacheDataBusiness;
+        public AssetsBusiness(IDbAccessor db,
                                 ICacheManager<object> cache,
                                 ICoinBusiness coinBusiness,
-                                IBase_UserBusiness base_UserBusiness) : base(db)
+                                IBase_UserBusiness base_UserBusiness,
+                                ICacheDataBusiness cacheDataBusiness) : base(db)
         {
             _db = db;
             _cache = cache;
             _coinBusiness = coinBusiness;
             _base_UserBusiness = base_UserBusiness;
+            _cacheDataBusiness = cacheDataBusiness;
         }
 
         #region 外部接口
 
-        public async Task<decimal> GetBalance(string userId, string coinCode)
+        public async Task<decimal> GetBalance(string tenantId, string coinCode)
         {
             var coin = await this._coinBusiness.GetCoinByCodeAsync(coinCode);
-            if (coin == null) return 0m;
-            var cacheKey = BuildCacheKey(userId, coin.Id);
+            if (coin == null) return 0m; 
+            var cacheKey = BuildCacheKey(tenantId, coin.Id);
             if (this._cache.Exists(cacheKey))
             {
                 var result = this._cache.Get(cacheKey).ChangeType<decimal>();
@@ -46,7 +50,7 @@ namespace Coldairarrow.Business.Transaction
             }
             else
             {
-                var userAssets = await this.Db.GetIQueryable<UserAssets>().FirstOrDefaultAsync(e => e.UserID == userId && e.CoinID == coinCode);
+                var userAssets = await this.Db.GetIQueryable<Assets>().FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CoinID == coinCode);
                 var balance = userAssets?.Balance ?? 0;
                 this._cache.Add(cacheKey, balance);
                 return balance;
@@ -55,7 +59,7 @@ namespace Coldairarrow.Business.Transaction
 
         [Transactional]
         public async Task<AjaxResult> UpdateAssets(params AssetsChangeItemDTO[] assetsChangeItems)
-        {
+        { 
             AjaxResult result = new AjaxResult();
             if (assetsChangeItems == null || !assetsChangeItems.Any())
             {
@@ -79,65 +83,65 @@ namespace Coldairarrow.Business.Transaction
                     result.Msg = "operation timeout.";
                     return result;
                 }
-                List<UserAssets> inserts = new List<UserAssets>();
-                List<UserAssets> updates = new List<UserAssets>();
-                List<UserAssetsWasteBook> wasteBooks = new List<UserAssetsWasteBook>();
+                List<Assets> inserts = new List<Assets>();
+                List<Assets> updates = new List<Assets>();
+                List<AssetsWasteBook> wasteBooks = new List<AssetsWasteBook>();
                 foreach (var item in assetsChangeItems)
                 {
-                    if (item.UserID.IsNullOrEmpty() || item.CoinID.IsNullOrEmpty())
+                    if (item.TenantId.IsNullOrEmpty() || item.CoinID.IsNullOrEmpty())
                     {
                         result.ErrorCode = ErrorCodeDefine.ParameterInvalid;
                         result.Msg = "parameter invalid";
                         return result;
-                    }
-                    var wasteBook = new UserAssetsWasteBook()
+                    } 
+                    var wasteBook = new AssetsWasteBook()
                     {
                         ID = Guid.NewGuid().GuidTo16String(),
                         AssetsWasteBookType = item.AssetsWasteBookType,
                         CoinID = item.CoinID,
-                        UserID = item.UserID,
+                        TenantId = item.TenantId,
                         Remarks = item.Remark,
                         RelateBusinessID = item.RelateID,
                         CreateTime = DateTime.Now,
                         ChangeAmount = item.ChangeAvailableAmount,
                         ChangeFrozenAmount = item.ChangeFrozenAmount, 
                     };
-                    var userassets = await this.Db.GetIQueryable<UserAssets>().Where(e => e.UserID == item.UserID && e.CoinID == item.CoinID).FirstOrDefaultAsync();
-                    if (userassets == null)
+                    var assets = await this.Db.GetIQueryable<Assets>().Where(e => e.TenantId == item.TenantId && e.CoinID == item.CoinID).FirstOrDefaultAsync();
+                    if (assets == null)
                     {
-                        userassets = new UserAssets()
+                        assets = new Assets()
                         {
                             Id = Guid.NewGuid().GuidTo16String(),
                             CoinID = item.CoinID,
-                            UserID = item.UserID,
+                            TenantId = item.TenantId,
                             Balance = item.ChangeAvailableAmount,
                             FrozenAmount = item.ChangeFrozenAmount,
                             TotalAmount = (item.ChangeAvailableAmount + item.ChangeFrozenAmount),
                         };
-                        inserts.Add(userassets); 
+                        inserts.Add(assets); 
                     }
                     else
                     {
-                        wasteBook.OriginalBalance = userassets.Balance;
-                        wasteBook.OriginalFrozenAmount = userassets.FrozenAmount;
+                        wasteBook.OriginalBalance = assets.Balance;
+                        wasteBook.OriginalFrozenAmount = assets.FrozenAmount;
 
-                        userassets.Balance += item.ChangeAvailableAmount;
-                        userassets.FrozenAmount += item.ChangeFrozenAmount;
-                        userassets.TotalAmount = (userassets.Balance + userassets.FrozenAmount);
-                        updates.Add(userassets); 
+                        assets.Balance += item.ChangeAvailableAmount;
+                        assets.FrozenAmount += item.ChangeFrozenAmount;
+                        assets.TotalAmount = (assets.Balance + assets.FrozenAmount);
+                        updates.Add(assets); 
                     } 
-                    if (userassets.Balance < 0 || userassets.FrozenAmount < 0)
+                    if (assets.Balance < 0 || assets.FrozenAmount < 0)
                     {
                         result.ErrorCode = ErrorCodeDefine.AssetsNotEnought;
                         result.Msg = "assets not enought.";
                         return result;
                     }
 
-                    wasteBook.Balance = userassets.Balance;
-                    wasteBook.FrozenAmount = userassets.FrozenAmount;
+                    wasteBook.Balance = assets.Balance;
+                    wasteBook.FrozenAmount = assets.FrozenAmount;
                     wasteBooks.Add(wasteBook);
 
-                    var cacheKey = BuildCacheKey(item.UserID, item.CoinID);
+                    var cacheKey = BuildCacheKey(item.TenantId, item.CoinID);
                     this._cache.Remove(cacheKey);
                 }
                 if (inserts.Any())
@@ -166,10 +170,10 @@ namespace Coldairarrow.Business.Transaction
                 result.Msg = "assets id required";
                 return result;
             }
-            if (string.IsNullOrEmpty(assetsChangeItem.UserID))
+            if (string.IsNullOrEmpty(assetsChangeItem.TenantId))
             {
-                result.ErrorCode = ErrorCodeDefine.UserIDRequired;
-                result.Msg = "userid required";
+                result.ErrorCode = ErrorCodeDefine.TenantIDRequired;
+                result.Msg = "TenantId required";
                 return result;
             }
             if (string.IsNullOrEmpty(assetsChangeItem.RelateID))
@@ -178,11 +182,11 @@ namespace Coldairarrow.Business.Transaction
                 result.Msg = "relateid required";
                 return result;
             }
-            var user = await this._base_UserBusiness.GetTheDataAsync(assetsChangeItem.UserID);
-            if(user == null)
+            var tenant = await this._cacheDataBusiness.GetTenantByUserIDAsync(assetsChangeItem.TenantId);
+            if(tenant == null)
             {
-                result.ErrorCode = ErrorCodeDefine.UserIDNotExist;
-                result.Msg = "userid not exist.";
+                result.ErrorCode = ErrorCodeDefine.TenantIDRequired;
+                result.Msg = "tenantId not exist.";
                 return result;
             }
             assetsChangeItem.ChangeAvailableAmount = Math.Round(assetsChangeItem.ChangeAvailableAmount, GlobalData.CurrencyPrecision);
@@ -200,9 +204,9 @@ namespace Coldairarrow.Business.Transaction
         #endregion
 
         #region 私有成员
-        private string BuildCacheKey(string userId, string coinId)
+        private string BuildCacheKey(string tenantId, string coinId)
         {
-            var assetsCacheKey = string.Format("Cache_Assets_Balance_{0}_{1}", userId, coinId);
+            var assetsCacheKey = string.Format("Cache_Assets_Balance_{0}_{1}", tenantId, coinId);
             return assetsCacheKey;
         }
         #endregion

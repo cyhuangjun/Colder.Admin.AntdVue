@@ -169,7 +169,7 @@ export default {
         title: '确认通过吗?',
         onOk () {
           return new Promise((resolve, reject) => {
-            thisObj.$http.post('/Transaction/Transfers/PassData', id).then(resJson => {
+            thisObj.$http.post('/Transaction/Transfers/PassData', { id: id }).then(resJson => {
               resolve()
 
               if (resJson.Success) {
@@ -190,7 +190,7 @@ export default {
         title: '确认拒绝吗?',
         onOk () {
           return new Promise((resolve, reject) => {
-            thisObj.$http.post('/Transaction/Transfers/DenyData', id).then(resJson => {
+            thisObj.$http.post('/Transaction/Transfers/DenyData', { id: id }).then(resJson => {
               resolve()
 
               if (resJson.Success) {

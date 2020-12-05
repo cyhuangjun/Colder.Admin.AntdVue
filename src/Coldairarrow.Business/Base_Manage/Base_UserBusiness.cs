@@ -54,7 +54,6 @@ namespace Coldairarrow.Business.Base_Manage
                     from b in ab.DefaultIfEmpty()
                     select @select.Invoke(a, b);
 
-            q = q.WhereIf(!search.apiKey.IsNullOrEmpty(), x => x.ApiKey == search.apiKey);
             q = q.WhereIf(!search.userId.IsNullOrEmpty(), x => x.Id == search.userId);
             if (!search.keyword.IsNullOrEmpty())
             {
@@ -146,36 +145,7 @@ namespace Coldairarrow.Business.Base_Manage
             await DeleteAsync(ids);
 
             await _userCache.UpdateCacheAsync(ids);
-        }
-
-        public async Task<Base_UserDTO> GetUserByApiKeyAsync(string apiKey)
-        {  
-            if (apiKey.IsNullOrEmpty())
-                return null;
-            else
-            {
-                string cacheKey = $"Cache_APIKEY_{apiKey}";
-                if (this._cache.Exists(cacheKey))
-                {
-                    var cache = this._cache.Get(cacheKey).ChangeType<Base_UserDTO>();
-                    return await Task.FromResult(cache);
-                }
-                else
-                {
-                    PageInput<Base_UsersInputDTO> input = new PageInput<Base_UsersInputDTO>
-                    {
-                        Search = new Base_UsersInputDTO
-                        {
-                            all = true,
-                            apiKey = apiKey
-                        }
-                    };
-                    var result = (await GetDataListAsync(input)).Data.FirstOrDefault();
-                    this._cache.Add(cacheKey, result);
-                    return result;
-                }
-            }
-        }
+        } 
         #endregion
 
         #region 私有成员

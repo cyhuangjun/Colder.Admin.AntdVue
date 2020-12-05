@@ -8,8 +8,8 @@ namespace Coldairarrow.Entity.Transaction
     /// <summary>
     /// 站点资产流水
     /// </summary>
-    [Table("UserAssetsWasteBook")]
-    public class UserAssetsWasteBook
+    [Table("AssetsWasteBook")]
+    public class AssetsWasteBook
     {
 
         /// <summary>
@@ -21,7 +21,7 @@ namespace Coldairarrow.Entity.Transaction
         /// <summary>
         /// 站点
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// 交易品种ID

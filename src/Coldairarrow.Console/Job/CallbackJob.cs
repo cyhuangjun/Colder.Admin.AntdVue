@@ -91,8 +91,8 @@ namespace Coldairarrow.Scheduler.Job
             var records = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.Finished && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
             foreach (var record in records)
             {
-                var user = await this._cacheDataBusiness.GetUserAsync(record.UserID);
-                record.CallBackStatus = await ExcutePaymentCallBack(record, user.PaymentCallbackUrl);
+                var tenant = await this._cacheDataBusiness.GetTenantAsync(record.TenantId);
+                record.CallBackStatus = await ExcutePaymentCallBack(record, tenant.PaymentCallbackUrl);
                 await this._coinTransactionInBusiness.UpdateDataAsync(record);
             }
         }
@@ -102,8 +102,8 @@ namespace Coldairarrow.Scheduler.Job
             var records = await this._transfersBusiness.GetListAsync(e => e.Status == TransfersStatus.Finished && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
             foreach (var record in records)
             {
-                var user = await this._cacheDataBusiness.GetUserAsync(record.UserID);
-                record.CallBackStatus = await ExcuteTransfersCallBack(record, user.TransfersCallbackUrl);
+                var tenant = await this._cacheDataBusiness.GetTenantAsync(record.TenantId);
+                record.CallBackStatus = await ExcuteTransfersCallBack(record, tenant.TransfersCallbackUrl);
                 await this._transfersBusiness.UpdateDataAsync(record);
             }
         }
@@ -113,7 +113,7 @@ namespace Coldairarrow.Scheduler.Job
             try
             {
                 if (string.IsNullOrEmpty(callBackUrl)) return APICallBackStatus.NotCallBackConfigured;
-                var customer = await this._base_UserBusiness.GetTheDataAsync(transfers.UserID);
+                var tenant = await this._cacheDataBusiness.GetTenantAsync(transfers.TenantId);
                 var request = new CashOutRequest()
                 {
                     AddressTo = transfers.AddressTo,
@@ -125,9 +125,9 @@ namespace Coldairarrow.Scheduler.Job
                     WithdrawId = transfers.Id,
                 };
                 var signParameters = request.ToDictionary();
-                if (!string.IsNullOrEmpty(customer.SecretKey))
+                if (!string.IsNullOrEmpty(tenant.SecretKey))
                 {
-                    request.Mac = signParameters.Sign(customer.SecretKey);
+                    request.Mac = signParameters.Sign(tenant.SecretKey);
                     signParameters.Add("mac", request.Mac);
                 }
                 var content = RestSharpHttpHelper.RestAction(callBackUrl, string.Empty, signParameters, RestSharp.Method.POST);
@@ -146,7 +146,7 @@ namespace Coldairarrow.Scheduler.Job
             {
                 if (string.IsNullOrEmpty(callBackUrl)) return APICallBackStatus.NotCallBackConfigured;
                 var wallet = await this._cacheDataBusiness.GetWalletByAddress(payment.Address);
-                var customer = await this._base_UserBusiness.GetTheDataAsync(payment.UserID);
+                var tenant = await this._cacheDataBusiness.GetTenantAsync(payment.TenantId);
                 var coin = await this._cacheDataBusiness.GetCoinAsync(payment.CoinID);
                 var request = new CashInRequest()
                 {
@@ -162,9 +162,9 @@ namespace Coldairarrow.Scheduler.Job
 
                 };
                 var signParameters = request.ToDictionary();
-                if (!string.IsNullOrEmpty(customer.SecretKey))
+                if (!string.IsNullOrEmpty(tenant.SecretKey))
                 {
-                    request.Mac = signParameters.Sign(customer.SecretKey);
+                    request.Mac = signParameters.Sign(tenant.SecretKey);
                     signParameters.Add("mac", request.Mac);
                 }
                 var content = RestSharpHttpHelper.RestAction(callBackUrl, string.Empty, signParameters, RestSharp.Method.POST);

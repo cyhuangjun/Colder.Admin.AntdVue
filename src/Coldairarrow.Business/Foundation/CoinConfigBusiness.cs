@@ -1,7 +1,9 @@
 ﻿using CacheManager.Core;
 using Coldairarrow.Business.Base_Manage;
+using Coldairarrow.Entity.Base_Manage;
 using Coldairarrow.Entity.Foundation;
 using Coldairarrow.Entity.Response;
+using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
@@ -15,15 +17,18 @@ namespace Coldairarrow.Business.Foundation
 {
     public class CoinConfigBusiness : BaseBusiness<CoinConfig>, ICoinConfigBusiness, ITransientDependency
     {
+        readonly ICacheDataBusiness _cacheDataBusiness;
         readonly ICacheManager<object> _cache;
         readonly IBase_UserBusiness _base_UserBusiness;
         public CoinConfigBusiness(IDbAccessor db,
                                   IBase_UserBusiness base_UserBusiness,
-                                  ICacheManager<object> cache)
+                                  ICacheManager<object> cache,
+                                  ICacheDataBusiness cacheDataBusiness)
             : base(db)
         {
             _base_UserBusiness = base_UserBusiness;
             _cache = cache;
+            _cacheDataBusiness = cacheDataBusiness;
         }
 
         #region 外部接口
@@ -64,17 +69,17 @@ namespace Coldairarrow.Business.Foundation
             await DeleteAsync(ids);
         }
 
-        public async Task<MinAmountViewDto> MinAmountAsync(string userId, string currency)
-        {
+        public async Task<MinAmountViewDto> MinAmountAsync(string tenantId, string currency)
+        { 
             currency = currency.ToUpper();
-            string cacheKey = $"Cache_{GetType().FullName}_MinAmountAsync_{userId}_{currency}";
+            string cacheKey = $"Cache_{GetType().FullName}_MinAmountAsync_{tenantId}_{currency}";
             if (this._cache.Exists(cacheKey))
             {
                 var cache = this._cache.Get(cacheKey).ChangeType<MinAmountViewDto>();
                 return await Task.FromResult(cache);
             }
             var result = new MinAmountViewDto() { Currency = currency };
-            var userCoinConfig = await this.Db.GetIQueryable<UserCoinConfig>().Where(e => e.UserID == userId && e.Currency == currency).FirstOrDefaultAsync();
+            var userCoinConfig = await this.Db.GetIQueryable<TenantCoinConfig>().Where(e => e.TenantId == tenantId && e.Currency == currency).FirstOrDefaultAsync();
             if (userCoinConfig != null)
             {
                 result.MinPaymentAmount = userCoinConfig.CoinInMinAmount;
@@ -82,10 +87,10 @@ namespace Coldairarrow.Business.Foundation
             }
             else
             {
-                var user = await this._base_UserBusiness.GetTheDataAsync(userId);
-                if (!string.IsNullOrEmpty(user?.CoinConfigID))
+                var tenant = await this._cacheDataBusiness.GetTenantAsync(tenantId);
+                if (!string.IsNullOrEmpty(tenant?.CoinConfigID))
                 {
-                    var coinConfig = await this.GetTheDataAsync(user.CoinConfigID);
+                    var coinConfig = await this.GetTheDataAsync(tenant.CoinConfigID);
                     result.MinPaymentAmount = coinConfig.CoinInMinAmount;
                     result.MinTransferAmount = coinConfig.CoinOutMinAmount;
                     result.MaxTransferAmount = coinConfig.CoinOutMaxAmount;
@@ -108,9 +113,10 @@ namespace Coldairarrow.Business.Foundation
             return result;
         }
 
-        public async Task<CoinConfig> GetEntityAsync(string userId, string currency)
+        public async Task<CoinConfig> GetEntityAsync(string tenantId, string currency)
         {
-            var coinConfigId = (await this._base_UserBusiness.GetTheDataAsync(userId)).CoinConfigID;
+            var tenant = await this._cacheDataBusiness.GetTenantAsync(tenantId);
+            var coinConfigId = tenant?.CoinConfigID;
             var coinConfig = await this.GetEntityAsync(e => e.IsDefault && e.Currency == currency);
             if (!string.IsNullOrEmpty(coinConfigId))
                 coinConfig = await this.GetTheDataAsync(coinConfigId);

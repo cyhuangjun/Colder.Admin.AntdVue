@@ -18,9 +18,9 @@ namespace Coldairarrow.Entity.Foundation
         public String Id { get; set; }
 
         /// <summary>
-        /// UserID
+        /// tenantId
         /// </summary>
-        public String UserID { get; set; }
+        public String TenantId { get; set; }
 
         /// <summary>
         /// UID
