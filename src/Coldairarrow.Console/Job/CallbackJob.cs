@@ -88,7 +88,7 @@ namespace Coldairarrow.Scheduler.Job
 
         private async Task ExcuteRecharge()
         {
-            var records = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.ArrivedAccount && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
+            var records = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.Finished && (e.CallBackStatus == null || e.CallBackStatus == APICallBackStatus.None));
             foreach (var record in records)
             {
                 var user = await this._cacheDataBusiness.GetUserAsync(record.UserID);
@@ -117,11 +117,8 @@ namespace Coldairarrow.Scheduler.Job
                 var request = new CashOutRequest()
                 {
                     AddressTo = transfers.AddressTo,
-                    AmountFrom = transfers.AmountFrom,
-                    AmountTo = transfers.AmountTo,
-                    CallbackUrl = callBackUrl,
-                    CurrencyFrom = transfers.CurrencyFrom,
-                    CurrencyTo = transfers.CurrencyTo,
+                    Amount = transfers.Amount,
+                    Currency = transfers.Currency,
                     OrderDescription = transfers.OrderDescription,
                     OrderId = transfers.OrderId,
                     Status = transfers.Status,
@@ -161,7 +158,7 @@ namespace Coldairarrow.Scheduler.Job
                     PayAddress = payment.Address,
                     PayCurrency = coin.Code,
                     TXID = payment.TXID,
-                    Status = (payment.Status == TransactionStatus.ArrivedAccount ? PaymentStatus.Finished : PaymentStatus.Waiting)
+                    Status = (payment.Status == TransactionStatus.Finished ? PaymentStatus.Finished : PaymentStatus.Waiting)
 
                 };
                 var signParameters = request.ToDictionary();

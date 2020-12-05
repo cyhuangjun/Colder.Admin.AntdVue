@@ -92,7 +92,7 @@ namespace Coldairarrow.Scheduler.Job
         private async Task MoveToSysWallet()
         {
             var coins = (await this._cacheDataBusiness.GetCoinsAsync()).Where(e => e.IsUseSysAccount && e.IsSupportWallet);
-            var transactions = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.ArrivedAccount && e.MoveStatus != MoveStatus.Finish && e.MoveStatus != MoveStatus.Invalid);
+            var transactions = await this._coinTransactionInBusiness.GetListAsync(e => e.Status == TransactionStatus.Finished && e.MoveStatus != MoveStatus.Finish && e.MoveStatus != MoveStatus.Invalid);
             var transactionsGroupCoins = transactions.GroupBy(e => e.CoinID);
             foreach (var transactionsGroupCoin in transactionsGroupCoins)
             {
@@ -217,36 +217,38 @@ namespace Coldairarrow.Scheduler.Job
         {
             var userAddress = txAddressG.Key;
             var coin = await this._cacheDataBusiness.GetCoinAsync(tokenCoin.TokenCoinID);
-            var orgCoinProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
-            EstimateGasInfo estimateGasInfo = null;
+            var orgCoinProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin); 
             var balanceData = new BalanceData
             {
                 Address = userAddress
             };
             //先判断用户钱包有没有矿工费,如果有的话就不需要从系统钱包调
             var balanceResult = orgCoinProvider.GetBalance(balanceData); 
-            estimateGasInfo = (await EstimateGas(tokenCoin, userAddress, sysWallet.Address, txAddressG.Sum(e => e.Amount))).Result;
-            if (balanceResult.Result > 0)
-            { 
-                if (balanceResult.Result >= estimateGasInfo.NeedAmount)
-                {
-                    foreach (var tx in txAddressG)
-                    {
-                        tx.MoveStatus = MoveStatus.WaitMoveToSys;
-                        tx.LastUpdateTime = DateTime.Now;
-                    }
-                    await this._coinTransactionInBusiness.UpdateDataAsync(txAddressG.ToList());
-                    return;
-                }   
+            var estimateMinerfeeResult = (await EstimateMinerfee(tokenCoin, userAddress, sysWallet.Address, txAddressG.Sum(e => e.Amount)));
+            if (!string.IsNullOrEmpty(estimateMinerfeeResult.Error))
+            {
+                var exception = new Exception($"评估矿工费错误,{estimateMinerfeeResult.Error}");
+                this._logger.LogError(exception, exception.Message);
+                exception.ToExceptionless().Submit();
+                return;
             }
-            var totalAmount = estimateGasInfo.NeedAmount * 2; 
+
+            if (balanceResult.Result >= estimateMinerfeeResult.Result)
+            {
+                foreach (var tx in txAddressG)
+                {
+                    tx.MoveStatus = MoveStatus.WaitMoveToSys;
+                    tx.LastUpdateTime = DateTime.Now;
+                }
+                await this._coinTransactionInBusiness.UpdateDataAsync(txAddressG.ToList());
+                return;
+            }
+            var totalAmount = estimateMinerfeeResult.Result * 2; 
             var sendCoinInfo = new SendCoinInfo
             {
                 Coin = coin,
                 Quantity = totalAmount,
-                ToAddress = userAddress,
-                EstimateGas = estimateGasInfo.EstimateGas,
-                GasPrice = estimateGasInfo.GasPrice                
+                ToAddress = userAddress,    
             };
             var result = await this._cryptocurrencyBusiness.SendCoinToCustomer(sendCoinInfo, sysWallet);
             if (string.IsNullOrEmpty(result.Error))
@@ -278,11 +280,10 @@ namespace Coldairarrow.Scheduler.Job
                 string securityKey = customerWallet.SecurityKey;
                 if (!string.IsNullOrEmpty(securityKey))
                     securityKey = EncryptionHelper.Decode(securityKey, customerWallet.UserID);
-                var estimateGasData = new EstimateGasData
+                var estimateGasData = new EstimateMinerfeeData
                 {
                     From = customerWallet.Address,
                     To = sysWallet.Address,
-                    Price = 0,
                     TokenAddress = coin.TokenCoinAddress,
                     Amount = moveAmount
                 };
@@ -301,23 +302,21 @@ namespace Coldairarrow.Scheduler.Job
                     await this._coinTransactionInBusiness.UpdateDataAsync(txAddressGroup.ToList());
                     return;
                 }
-                var estimateGasResult = cryptocurrencyProvider.EstimateGas(estimateGasData);
-                if (!string.IsNullOrEmpty(estimateGasResult.Error))
+                var estimateMinerfeeResult = cryptocurrencyProvider.EstimateMinerfee(estimateGasData);
+                if (!string.IsNullOrEmpty(estimateMinerfeeResult.Error))
                 {
-                    var exception = new Exception($"Gas评估错误,{estimateGasResult.Error}");
+                    var exception = new Exception($"评估矿工费错误,{estimateMinerfeeResult.Error}");
                     this._logger.LogError(exception, exception.Message);
                     exception.ToExceptionless().Submit();
                     return;
                 }
-                moveAmount = moveAmount - estimateGasResult.Result.NeedAmount;
+                moveAmount = moveAmount - estimateMinerfeeResult.Result;
                 string sysAddress = sysWallet.Address;
                 var sendCoinInfo = new SendCoinInfo
                 {
                     Coin = coin,
                     Quantity = moveAmount,
                     ToAddress = sysAddress,
-                    EstimateGas = estimateGasResult.Result.EstimateGas,
-                    GasPrice = estimateGasResult.Result.GasPrice
                 };
                 var moveTXID = (await this._cryptocurrencyBusiness.SendCoinToSys(sendCoinInfo, customerWallet)).Result;
                 if (!string.IsNullOrEmpty(moveTXID))
@@ -345,9 +344,12 @@ namespace Coldairarrow.Scheduler.Job
             var tokenProvider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(tokenCoin);
             var totalTokenAmount = txAddressGroup.Sum(e => e.Amount);
             var userAddress = txAddressGroup.Key;
-            var estimateGasResult = await EstimateGas(tokenCoin, userAddress, sysWallet.Address, totalTokenAmount);
-            if (!string.IsNullOrEmpty(estimateGasResult.Error))
+            var estimateMinerfeeResult = await EstimateMinerfee(tokenCoin, userAddress, sysWallet.Address, totalTokenAmount);
+            if (!string.IsNullOrEmpty(estimateMinerfeeResult.Error))
             {
+                var exception = new Exception($"评估矿工费错误,{estimateMinerfeeResult.Error}");
+                this._logger.LogError(exception, exception.Message);
+                exception.ToExceptionless().Submit();
                 return;
             }
             var balanceData = new BalanceData
@@ -355,7 +357,7 @@ namespace Coldairarrow.Scheduler.Job
                 Address = userAddress
             };
             var balance = provider.GetBalance(balanceData);
-            var needAmount = estimateGasResult.Result.NeedAmount;
+            var needAmount = estimateMinerfeeResult.Result;
             if (balance.Result < (needAmount))
             {
                 foreach (var tx in txAddressGroup)
@@ -382,11 +384,8 @@ namespace Coldairarrow.Scheduler.Job
             var sendCoinInfo = new SendCoinInfo
             {
                 Coin = tokenCoin,
-                ParentCoin = coin,
                 Quantity = totalTokenAmount,
                 ToAddress = sysWallet.Address,
-                EstimateGas = 200000m,
-                GasPrice = estimateGasResult.Result.GasPrice
             };
             var customerWallet = await this._walletBusiness.GetEntityAsync(e => e.Address == userAddress);
             if (customerWallet == null) return;
@@ -488,27 +487,17 @@ namespace Coldairarrow.Scheduler.Job
         /// <param name="to">接收地址</param>
         /// <param name="amount">发送金额</param>
         /// <returns></returns>
-        private async Task<ResponseData<EstimateGasInfo>> EstimateGas(Coin coin, string from, string to, decimal amount)
+        private async Task<ResponseData<decimal>> EstimateMinerfee(Coin coin, string from, string to, decimal amount)
         {
-            var estimateGasData = new EstimateGasData
+            var estimateGasData = new EstimateMinerfeeData
             {
                 From = from,
                 To = to,
-                Amount = amount,
-                Price = 0,
+                Amount = amount, 
                 TokenAddress = coin.TokenCoinAddress 
             };
             var provider = await this._cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
-
-            switch (coin.ProviderType)
-            { 
-                case ProviderType.ETH:
-                case ProviderType.ETHTokenCoin:
-                    var gasPriceResult = this._evaluateMinefeeRateBusiness.GetETHGasPrice();
-                    estimateGasData.Price = gasPriceResult.Recommend;
-                    break;
-            }
-            var estimateGasResult = provider.EstimateGas(estimateGasData);
+            var estimateGasResult = provider.EstimateMinerfee(estimateGasData);
             return estimateGasResult;
         }
     }

@@ -104,7 +104,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 Amount = sendData.Amount,
                 SendToAddress = sendData.ToCoinAddress
             };
-            var minconf = sendData.Minconf <= 0 ? 3 : sendData.Minconf;
+            var minconf = 2;
             var isUnlockSuccess = UnLockWallet();
             if (!isUnlockSuccess)
             {
@@ -112,7 +112,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 return result;
             }
             var address = base._configuration.MultiSigAddress.Item1;
-            var feeRateResult = SetRecommendedFee(recommandPara, sendData.MinerFeeRate, minconf, null, new List<string>() { address });
+            var feeRateResult = SetRecommendedFee(recommandPara, this._configuration.MinerFeeRate, minconf, null, new List<string>() { address });
             if (!string.IsNullOrEmpty(feeRateResult.Error))
             {
                 result.Error = feeRateResult.Error;
@@ -440,9 +440,9 @@ namespace CCPP.Cryptocurrency.Common.Provider
         /// <param name="amount">转出数量</param>
         /// <param name="price">转出单价</param>
         /// <returns></returns>
-        public virtual ResponseData<EstimateGasInfo> EstimateGas(EstimateGasData data)
+        public virtual ResponseData<decimal> EstimateMinerfee(EstimateMinerfeeData data)
         {
-            throw new NotSupportedException();
+            return new ResponseData<decimal>() { Result = 0m };
         }
        
         /// <summary>
@@ -612,7 +612,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 Amount = sendData.Amount,
                 SendToAddress = sendData.ToCoinAddress
             };
-            var minconf = sendData.Minconf <= 0 ? 3 : sendData.Minconf;
+            var minconf = 2;
             var isUnlockSuccess = UnLockWallet();
             if (!isUnlockSuccess)
             {
@@ -622,7 +622,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
             var multiSigAddress = base._configuration.MultiSigAddress?.Item1;
             var privatekey = base._configuration.MultiSigAddress?.Item2;
 
-            var feeRateResult = SetRecommendedFee(recommandPara, sendData.MinerFeeRate, minconf, new List<string>() { multiSigAddress });
+            var feeRateResult = SetRecommendedFee(recommandPara, this._configuration.MinerFeeRate, minconf, new List<string>() { multiSigAddress });
             if (!string.IsNullOrEmpty(feeRateResult.Error))
             {
                 result.Error = feeRateResult.Error;
@@ -822,9 +822,9 @@ namespace CCPP.Cryptocurrency.Common.Provider
             TransactionFeeInfo data = new TransactionFeeInfo();
             int precision = this._configuration.Precision ?? Digits;
             var totalAmout = sendDatas.Sum(e => e.Amount);
-            var minconf = sendDatas.FirstOrDefault()?.Minconf ?? 2;
+            var minconf = 2;
             if (minconf == 0) minconf = 2;
-            var minerFeeRate = sendDatas.FirstOrDefault().MinerFeeRate;
+            var minerFeeRate = this._configuration.MinerFeeRate;
             var recommandParas = new List<RecommendedParam>();
             foreach (var sendData in sendDatas)
             {

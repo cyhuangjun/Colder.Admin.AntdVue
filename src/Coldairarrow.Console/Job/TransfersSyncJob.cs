@@ -100,7 +100,7 @@ namespace Coldairarrow.Scheduler.Job
                         record.LastUpdateUserID = item.LastUpdateUserID;
                         await this._transfersBusiness.UpdateDataAsync(record);
                         break;
-                    case TransactionStatus.TransactionOut:
+                    case TransactionStatus.Finished:
                         record.Status = TransfersStatus.Finished;
                         record.UpdatedAt = item.LastUpdateTime;
                         record.LastUpdateUserID = item.LastUpdateUserID;

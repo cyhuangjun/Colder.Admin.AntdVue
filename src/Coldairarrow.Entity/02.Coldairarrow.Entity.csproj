@@ -18,4 +18,9 @@
     <ProjectReference Include="..\Coldairarrow.Util\01.Coldairarrow.Util.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Admin\Request\" />
+    <Folder Include="Admin\Response\" />
+  </ItemGroup>
+
 </Project>

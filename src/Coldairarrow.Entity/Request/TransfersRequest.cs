@@ -6,12 +6,9 @@ namespace Coldairarrow.Entity.Request
 {
     public class TransfersRequest
     {
-        public string CurrencyFrom { set; get; }
+        public string Currency { set; get; }
 
-        public decimal AmountFrom { set; get; }
-
-        public string CurrencyTo { set; get; }
-
+        public decimal Amount { set; get; }
         public string AddressTo { set; get; }
         /// <summary>
         ///  (optional) - inner store order ID, e.g. "RGDBP-21314"

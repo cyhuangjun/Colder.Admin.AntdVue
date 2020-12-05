@@ -134,7 +134,7 @@ namespace Coldairarrow.Scheduler.Job
                     var transactionInCheck = transactionInChecks.FirstOrDefault(f => f.RelateBusinessID == item.Id);
                     if (transactionInCheck != null)
                     {
-                        item.Status = TransactionStatus.ArrivedAccount;
+                        item.Status = TransactionStatus.Finished;
                         item.LastUpdateTime = DateTime.Now;
                         item.ArrivalAmount = transactionInCheck.ChangeAmount;
                         await this._coinTransactionInBusiness.UpdateDataAsync(item);
@@ -233,7 +233,7 @@ namespace Coldairarrow.Scheduler.Job
                     var assetsResult = await this._userAssetsBusiness.UpdateAssets(assetsChangeItem);
                     if (assetsResult.Success)
                     {
-                        item.Status = TransactionStatus.ArrivedAccount;
+                        item.Status = TransactionStatus.Finished;
                         item.LastUpdateTime = DateTime.Now;
                         item.CoinInHandlingFee = fee;
                         item.ArrivalAmount = receiveQuantity;

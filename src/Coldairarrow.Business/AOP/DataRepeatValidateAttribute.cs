@@ -46,7 +46,7 @@ namespace Coldairarrow.Business
                 q = method.MakeGenericMethod(entityType).Invoke(repository, new object[] { }) as IQueryable;
             }
             else
-                q = context.InvocationTarget.GetType().GetMethod("GetIQueryable").Invoke(context.InvocationTarget, new object[] { }) as IQueryable;
+                q = context.InvocationTarget.GetType().GetMethod("GetIQueryable", new Type[] { }).Invoke(context.InvocationTarget, new object[] { }) as IQueryable;
             q = q.Where("Id != @0", data.GetPropertyValue("Id"));
             q = q.Where(
                 string.Join(_matchOr ? " || " : " && ", whereList),

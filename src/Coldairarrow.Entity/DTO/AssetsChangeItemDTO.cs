@@ -22,7 +22,7 @@ namespace Coldairarrow.Entity.DTO
         /// <summary>
         /// 冻结资产变动数，+表示增加，-表示扣除
         /// </summary>
-        public decimal ChangeFreeAmount { get; set; }
+        public decimal ChangeFrozenAmount { get; set; }
         /// <summary>
         /// 可用资产变动数，+表示增加，-表示扣除
         /// </summary>

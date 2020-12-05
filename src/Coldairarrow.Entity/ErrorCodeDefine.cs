@@ -114,6 +114,19 @@ namespace Coldairarrow.Entity
         /// UID不能为空
         /// </summary>
         public const int UIDNotRequired = 40026;
+        /// <summary>
+        /// 未知错误
+        /// </summary>
+        public const int UnknownError = 40027;
+        /// <summary>
+        /// 钱包余额不足
+        /// </summary>
+        public const int WalletBalanceNotEnought = 40028;
+        /// <summary>
+        /// 钱包服务错误
+        /// </summary>
+        public const int WalletServceError = 40028;
+
         #region 基础
         /// <summary>
         /// 处理成功
