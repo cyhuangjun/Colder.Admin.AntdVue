@@ -33,18 +33,10 @@ namespace Coldairarrow.Business.Transaction
         public DateTime? endTime { get; set; }
     }
 
-    public class TransfersOutDTO
-    {
-        public string Id { set; get; }
-        public TransfersStatus Status { get; set; }
-        public string ClientOrderId { get; set; }
-        public string Currency { set; get; }
-        public decimal Amount { set; get; }
-        public string AddressTo { set; get; }
-        public decimal? HandlingFee { set; get; }
-        public DateTime CreatedAt { set; get; }
-        public DateTime? ApproveTime { set; get; }
-        public string OrderDescription { set; get; }
+    [Map(typeof(Transfers))]
+    public class TransfersOutDTO : Transfers
+    { 
+        public string Currency { set; get; } 
         public string StatusStr
         {
             get
@@ -52,6 +44,5 @@ namespace Coldairarrow.Business.Transaction
                 return Status.GetDescription();
             }
         }
-        public string TXID { set; get; }
-    }
+    } 
 }

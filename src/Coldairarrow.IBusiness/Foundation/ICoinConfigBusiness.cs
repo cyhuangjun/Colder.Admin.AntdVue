@@ -1,10 +1,10 @@
 ﻿using Coldairarrow.Entity.Foundation;
-using Coldairarrow.Entity.Response;
 using Coldairarrow.Util;
-using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
+using System;
+using Coldairarrow.Entity.Response;
 
 namespace Coldairarrow.Business.Foundation
 {
@@ -17,7 +17,6 @@ namespace Coldairarrow.Business.Foundation
         Task DeleteDataAsync(List<string> ids);
         Task<MinAmountViewDto> MinAmountAsync(string tenantId, string currency);
         Task<CoinConfig> GetEntityAsync(string tenantId, string currency);
-
 
         CoinConfig GetEntity(Expression<Func<CoinConfig, bool>> expression);
         Task<CoinConfig> GetEntityAsync(Expression<Func<CoinConfig, bool>> expression);

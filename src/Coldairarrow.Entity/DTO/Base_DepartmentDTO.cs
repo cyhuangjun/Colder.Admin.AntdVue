@@ -15,6 +15,7 @@ namespace Coldairarrow.Entity
             set
             {
                 base.SecretKey = value;
+                //base.SecretKey = string.IsNullOrEmpty(value) ? value : EncryptionHelper.Encode(value, this.ApiKey);
             }
             get
             {

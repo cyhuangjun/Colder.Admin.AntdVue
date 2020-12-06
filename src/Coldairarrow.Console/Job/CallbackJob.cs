@@ -114,11 +114,12 @@ namespace Coldairarrow.Scheduler.Job
             {
                 if (string.IsNullOrEmpty(callBackUrl)) return APICallBackStatus.NotCallBackConfigured;
                 var tenant = await this._cacheDataBusiness.GetTenantAsync(transfers.TenantId);
+                var coin = await this._cacheDataBusiness.GetCoinAsync(transfers.CoinID);
                 var request = new CashOutRequest()
                 {
                     AddressTo = transfers.AddressTo,
                     Amount = transfers.Amount,
-                    Currency = transfers.Currency,
+                    Currency = coin.Code,
                     OrderDescription = transfers.OrderDescription,
                     OrderId = transfers.OrderId,
                     Status = transfers.Status,

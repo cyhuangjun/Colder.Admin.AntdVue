@@ -57,7 +57,9 @@
 <script>
 import EditForm from './EditForm'
 const columns = [
-  { title: '部门名', dataIndex: 'Text', width: '20%' },
+  { title: '编码', dataIndex: 'Code', width: '10%' },
+  { title: '名称', dataIndex: 'Text', width: '20%' },
+  { title: '冻结', dataIndex: 'IsFrozen', width: '10%' },
   { title: '操作', dataIndex: 'action', scopedSlots: { customRender: 'action' } }
 ]
 

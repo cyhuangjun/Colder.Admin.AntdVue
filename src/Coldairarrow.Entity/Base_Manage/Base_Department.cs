@@ -49,8 +49,6 @@ namespace Coldairarrow.Entity.Base_Manage
 
         public string SecretKey { set; get; }
 
-        public string CoinConfigID { set; get; }
-
         public string PaymentCallbackUrl { set; get; }
 
         public string TransfersCallbackUrl { set; get; }

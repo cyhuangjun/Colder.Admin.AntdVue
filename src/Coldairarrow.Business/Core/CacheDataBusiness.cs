@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Coldairarrow.Entity.Base_Manage;
+using LinqKit;
 
 namespace Coldairarrow.Business.Core
 {
@@ -27,13 +28,13 @@ namespace Coldairarrow.Business.Core
 
         public async Task<List<Coin>> GetCoinsAsync()
         {
-            string cacheKey = $"Cache_{GetType().FullName}_GetCoins_";
+            string cacheKey = $"Cache_{GetType().FullName}_GetCoinsAsync_";
             if (this._cache.Exists(cacheKey))
             {
                 var cache = this._cache.Get(cacheKey).ChangeType<List<Coin>>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Coin>().Where(e => e.IsAvailable).ToListAsync();
+            var result = await this._db.GetIQueryable<Coin>().AsExpandable().Where(e => e.IsAvailable).ToListAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -41,13 +42,27 @@ namespace Coldairarrow.Business.Core
 
         public async Task<Coin> GetCoinAsync(string coinId)
         {
-            string cacheKey = $"Cache_{GetType().FullName}_GetCoin_{coinId}_";
+            string cacheKey = $"Cache_{GetType().FullName}_GetCoinAsync_{coinId}_";
             if (this._cache.Exists(cacheKey))
             {
                 var cache = this._cache.Get(cacheKey).ChangeType<Coin>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Coin>().Where(e => e.Id == coinId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Coin>().AsExpandable().Where(e => e.Id == coinId).FirstOrDefaultAsync();
+            if (result != null)
+                this._cache.Add(cacheKey, result);
+            return result;
+        }
+
+        public async Task<Coin> GetCoinByCodeAsync(string code)
+        {
+            string cacheKey = $"Cache_{GetType().FullName}_GetCoinByCodeAsync_{code}_";
+            if (this._cache.Exists(cacheKey))
+            {
+                var cache = this._cache.Get(cacheKey).ChangeType<Coin>();
+                return await Task.FromResult(cache);
+            }
+            var result = await this._db.GetIQueryable<Coin>().AsExpandable().Where(e => e.Code == code).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -61,7 +76,7 @@ namespace Coldairarrow.Business.Core
                 var cache = this._cache.Get(cacheKey).ChangeType<Base_User>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Base_User>().Where(e => e.Id == userId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Base_User>().AsExpandable().Where(e => e.Id == userId).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -75,7 +90,7 @@ namespace Coldairarrow.Business.Core
                 var cache = this._cache.Get(cacheKey).ChangeType<Wallet>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Wallet>().Where(e => e.Address == address).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Wallet>().AsExpandable().Where(e => e.Address == address).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -89,7 +104,7 @@ namespace Coldairarrow.Business.Core
                 var cache = this._cache.Get(cacheKey).ChangeType<Wallet>();
                 return await Task.FromResult(cache);
             }
-            var result = await this._db.GetIQueryable<Wallet>().Where(e => e.TenantId == tenantId && e.UID == clientUid && e.CoinID == coinId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Wallet>().AsExpandable().Where(e => e.TenantId == tenantId && e.UID == clientUid && e.CoinID == coinId).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -104,7 +119,7 @@ namespace Coldairarrow.Business.Core
                 return await Task.FromResult(cache);
             }
             var user = await this.GetUserAsync(userId);
-            var result = await this._db.GetIQueryable<Base_Department>().Where(e => e.Id == user.DepartmentId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Base_Department>().AsExpandable().Where(e => e.Id == user.DepartmentId).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;
@@ -118,7 +133,7 @@ namespace Coldairarrow.Business.Core
                 var cache = this._cache.Get(cacheKey).ChangeType<Base_Department>();
                 return await Task.FromResult(cache);
             } 
-            var result = await this._db.GetIQueryable<Base_Department>().Where(e => e.Id == tenantId).FirstOrDefaultAsync();
+            var result = await this._db.GetIQueryable<Base_Department>().AsExpandable().Where(e => e.Id == tenantId).FirstOrDefaultAsync();
             if (result != null)
                 this._cache.Add(cacheKey, result);
             return result;

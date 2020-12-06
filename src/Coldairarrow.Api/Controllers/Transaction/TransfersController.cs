@@ -35,36 +35,21 @@ namespace Coldairarrow.Api.Controllers.Transaction
         public async Task<TransfersOutDTO> GetTheData(IdInputDTO input)
         {
             var theData = await _transfersBus.GetTheDataAsync(input.id);
+            var coin = await this._cacheDataBusiness.GetCoinAsync(theData.CoinID);
             return new TransfersOutDTO()
             {
                 AddressTo = theData.AddressTo,
                 Amount = theData.Amount,
                 ApproveTime = theData.ApproveTime,
-                ClientOrderId = theData.OrderId,
+                OrderId = theData.OrderId,
                 CreatedAt = theData.CreatedAt,
-                Currency = theData.Currency,
+                Currency = coin.Code,
                 HandlingFee = theData.HandlingFee,
                 Id = theData.Id,
                 OrderDescription = theData.OrderDescription,
                 Status = theData.Status
             };
-        }
-
-        [HttpPost]
-        public async Task<List<SelectOption>> GetCurrencyList()
-        {
-            var coins = await this._cacheDataBusiness.GetCoinsAsync();
-            List<SelectOption> list = new List<SelectOption>();
-            foreach (var aValue in coins)
-            {
-                list.Add(new SelectOption
-                {
-                    value = aValue.Id,
-                    text = aValue.Code
-                });
-            }
-            return list;
-        }
+        } 
 
         [HttpPost]
         public List<SelectOption> GetTransactionStatusList()
