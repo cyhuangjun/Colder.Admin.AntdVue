@@ -38,9 +38,9 @@ namespace Coldairarrow.Business.Transaction
 
         #region 外部接口
 
-        public async Task<decimal> GetBalance(string tenantId, string coinCode)
+        public async Task<decimal> GetBalance(string tenantId, string coinId)
         {
-            var coin = await this._coinBusiness.GetCoinByCodeAsync(coinCode);
+            var coin = await this._cacheDataBusiness.GetCoinAsync(coinId);
             if (coin == null) return 0m; 
             var cacheKey = BuildCacheKey(tenantId, coin.Id);
             if (this._cache.Exists(cacheKey))
@@ -50,7 +50,7 @@ namespace Coldairarrow.Business.Transaction
             }
             else
             {
-                var userAssets = await this.Db.GetIQueryable<Assets>().FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CoinID == coinCode);
+                var userAssets = await this.Db.GetIQueryable<Assets>().FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CoinID == coinId);
                 var balance = userAssets?.Balance ?? 0;
                 this._cache.Add(cacheKey, balance);
                 return balance;

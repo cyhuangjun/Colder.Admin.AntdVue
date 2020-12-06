@@ -8,7 +8,7 @@ namespace Coldairarrow.Business.Transaction
 {
     public interface IAssetsBusiness
     {
-        Task<decimal> GetBalance(string tenantId, string coinCode);
+        Task<decimal> GetBalance(string tenantId, string coinId);
 
         Task<AjaxResult> UpdateAssets(params AssetsChangeItemDTO[] assetsChangeItems);
     }

@@ -2,6 +2,7 @@
 using Coldairarrow.Entity;
 using Coldairarrow.Entity.DTO;
 using Coldairarrow.Entity.Enum;
+using Coldairarrow.Entity.Foundation;
 using Coldairarrow.Entity.Transaction;
 using Coldairarrow.IBusiness;
 using Coldairarrow.IBusiness.Core;
@@ -39,23 +40,15 @@ namespace Coldairarrow.Business.Transaction
 
         public async Task<PageResult<TransfersOutDTO>> GetDataListAsync(PageInput<TransfersInputDTO> input)
         {
-            Expression<Func<Transfers, TransfersOutDTO>> select = (e) => new TransfersOutDTO
+            Expression<Func<Transfers, Coin, TransfersOutDTO>> select = (a, b) => new TransfersOutDTO
             {
-                AddressTo = e.AddressTo,
-                Amount = e.Amount,
-                ApproveTime = e.ApproveTime,
-                ClientOrderId = e.OrderId,
-                CreatedAt = e.CreatedAt,
-                Currency = e.Currency,
-                HandlingFee = e.HandlingFee,
-                Id = e.Id,
-                OrderDescription = e.OrderDescription,
-                Status = e.Status,
-                TXID = e.TXID
+                Currency = b.Code
             };
             select = select.BuildExtendSelectExpre();
-            var q = from r in this.Db.GetIQueryable<Transfers>().AsExpandable()
-                    select @select.Invoke(r);
+            var q = from a in this.Db.GetIQueryable<Transfers>().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    select @select.Invoke(a, b); 
             //筛选
             var where = LinqHelper.True<TransfersOutDTO>();
             var search = input.Search;
@@ -64,7 +57,7 @@ namespace Coldairarrow.Business.Transaction
             if (search.Status.HasValue)
                 where = where.And(x => x.Status == search.Status.Value);
             if (!search.SearchKey.IsNullOrEmpty())
-                where = where.And(x => x.OrderDescription.Contains(search.SearchKey) || x.ClientOrderId.Contains(search.SearchKey) || x.Id.Contains(search.SearchKey));
+                where = where.And(x => x.OrderDescription.Contains(search.SearchKey) || x.OrderId.Contains(search.SearchKey) || x.Id.Contains(search.SearchKey));
             if (!search.startTime.IsNullOrEmpty())
                 where = where.And(x => x.CreatedAt >= search.startTime);
             if (!search.endTime.IsNullOrEmpty())

@@ -1,6 +1,5 @@
 ﻿using Coldairarrow.Business.Foundation;
 using Coldairarrow.Entity.Foundation;
-using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Util;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -9,46 +8,44 @@ using System.Threading.Tasks;
 namespace Coldairarrow.Api.Controllers.Foundation
 {
     [Route("/Foundation/[controller]/[action]")]
-    public class CoinController : BaseApiController
+    public class CoinConfigController : BaseApiController
     {
         #region DI
-        ICacheDataBusiness _cacheDataBusiness;
-        public CoinController(ICoinBusiness coinBus,
-                                   ICacheDataBusiness cacheDataBusiness)
+
+        public CoinConfigController(ICoinConfigBusiness coinConfigBus)
         {
-            _coinBus = coinBus;
-            _cacheDataBusiness = cacheDataBusiness;
+            _coinConfigBus = coinConfigBus;
         }
 
-        ICoinBusiness _coinBus { get; }
+        ICoinConfigBusiness _coinConfigBus { get; }
 
         #endregion
 
         #region 获取
 
         [HttpPost]
-        public async Task<PageResult<Coin>> GetDataList(PageInput<ConditionDTO> input)
+        public async Task<PageResult<CoinConfig>> GetDataList(PageInput<ConditionDTO> input)
         {
-            return await _coinBus.GetDataListAsync(input);
+            return await _coinConfigBus.GetDataListAsync(input);
         }
 
         [HttpPost]
-        public async Task<Coin> GetTheData(IdInputDTO input)
+        public async Task<CoinConfig> GetTheData(IdInputDTO input)
         {
-            return await _coinBus.GetTheDataAsync(input.id);
+            return await _coinConfigBus.GetTheDataAsync(input.id);
         }
 
         [HttpPost]
-        public async Task<List<SelectOption>> GetCurrencyList()
+        public async Task<List<SelectOption>> GetSelectOption()
         {
-            var coins = await this._cacheDataBusiness.GetCoinsAsync();
+            var coinConfigs = await this._coinConfigBus.GetListAsync(e=>1==1);
             List<SelectOption> list = new List<SelectOption>();
-            foreach (var aValue in coins)
+            foreach (var aValue in coinConfigs)
             {
                 list.Add(new SelectOption
                 {
                     value = aValue.Id,
-                    text = aValue.Code
+                    text = aValue.Caption
                 });
             }
             return list;
@@ -58,24 +55,24 @@ namespace Coldairarrow.Api.Controllers.Foundation
         #region 提交
 
         [HttpPost]
-        public async Task SaveData(Coin data)
+        public async Task SaveData(CoinConfig data)
         {
             if (data.Id.IsNullOrEmpty())
             {
                 InitEntity(data);
 
-                await _coinBus.AddDataAsync(data);
+                await _coinConfigBus.AddDataAsync(data);
             }
             else
             {
-                await _coinBus.UpdateDataAsync(data);
+                await _coinConfigBus.UpdateDataAsync(data);
             }
         }
 
         [HttpPost]
         public async Task DeleteData(List<string> ids)
         {
-            await _coinBus.DeleteDataAsync(ids);
+            await _coinConfigBus.DeleteDataAsync(ids);
         }
 
         #endregion

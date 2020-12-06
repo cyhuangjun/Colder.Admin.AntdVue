@@ -11,6 +11,7 @@ namespace Coldairarrow.IBusiness.Core
     {
         Task<List<Coin>> GetCoinsAsync();
         Task<Coin> GetCoinAsync(string coinId);
+        Task<Coin> GetCoinByCodeAsync(string code);
         Task<Base_User> GetUserAsync(string userId);
         Task<Base_Department> GetTenantByUserIDAsync(string userId);
         Task<Base_Department> GetTenantAsync(string tenantId);

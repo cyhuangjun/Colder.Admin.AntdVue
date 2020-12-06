@@ -82,7 +82,7 @@ import DetailForm from './Detail'
 
 const columns = [
   { title: '订单号', dataIndex: 'Id', width: '10%', align: 'center' },
-  { title: '商户单号', dataIndex: 'ClientOrderId', width: '10%', align: 'center' },
+  { title: '商户单号', dataIndex: 'OrderId', width: '10%', align: 'center' },
   { title: '币种', dataIndex: 'Currency', width: '10%', align: 'center', sorter: true },
   { title: '数量', dataIndex: 'Amount', width: '10%', align: 'center' },
   { title: '手续费', dataIndex: 'HandlingFee', width: '10%', align: 'center' },
@@ -126,7 +126,7 @@ export default {
       this.getDataList()
     },
     init () {
-      this.$http.post('/Transaction/Transfers/GetCurrencyList').then(resJson => {
+      this.$http.post('/Foundation/Coin/GetCurrencyList').then(resJson => {
         this.CurrencyList = resJson.Data
       })
       this.$http.post('/Transaction/Transfers/GetTransactionStatusList').then(resJson => {

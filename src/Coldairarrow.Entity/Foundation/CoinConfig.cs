@@ -16,12 +16,12 @@ namespace Coldairarrow.Entity.Foundation
         /// ID
         /// </summary>
         [Key, Column(Order = 1)]
-        public String ID { get; set; }
+        public String Id { get; set; }
 
         /// <summary>
-        /// Currency
+        /// 
         /// </summary>
-        public String Currency { get; set; }
+        public String CoinID { get; set; }
 
         /// <summary>
         /// 说明
@@ -43,7 +43,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// MinerFeeModeType
         /// </summary>
-        public FeeMode MinerFeeModeType { get; set; }
+        public Int32 MinerFeeModeType { get; set; }
 
         /// <summary>
         /// 最小充币
@@ -56,11 +56,13 @@ namespace Coldairarrow.Entity.Foundation
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
         public Decimal CoinOutMinAmount { get; set; }
+
         /// <summary>
-        /// 最大提币
+        /// 最小充币
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
         public Decimal CoinOutMaxAmount { get; set; }
+
         /// <summary>
         /// 充币手续费
         /// </summary>
@@ -77,11 +79,13 @@ namespace Coldairarrow.Entity.Foundation
         /// 充币费用类型，1固定，2比例
         /// </summary>
         public FeeMode CoinInHandlingFeeModeType { get; set; }
+
         /// <summary>
-        /// 充币最小手续费
+        /// CoinInHandlingMinFee
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public decimal? CoinInHandlingMinFee { get; set; }
+        public Decimal? CoinInHandlingMinFee { get; set; }
+
         /// <summary>
         /// 提币手续费
         /// </summary>
@@ -99,30 +103,34 @@ namespace Coldairarrow.Entity.Foundation
         /// </summary>
         public FeeMode CoinOutHandlingFeeModeType { get; set; }
 
+        /// <summary>
+        /// CoinOutHandlingMinFee
+        /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public decimal? CoinOutHandlingMinFee { get; set; }
+        public Decimal? CoinOutHandlingMinFee { get; set; }
+
         /// <summary>
         /// 是否默认
         /// </summary>
         public Boolean IsDefault { get; set; }
 
         /// <summary>
-        /// FCreateTime
+        /// CreateTime
         /// </summary>
         public DateTime CreateTime { get; set; }
 
         /// <summary>
-        /// FCreatorID
+        /// CreatorID
         /// </summary>
         public String CreatorID { get; set; }
 
         /// <summary>
-        /// FLastUpdateTime
+        /// LastUpdateTime
         /// </summary>
         public DateTime? LastUpdateTime { get; set; }
 
         /// <summary>
-        /// FLastUpdateUserID
+        /// LastUpdateUserID
         /// </summary>
         public String LastUpdateUserID { get; set; }
 

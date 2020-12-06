@@ -35,12 +35,17 @@ namespace Coldairarrow.Api.Controllers.Base_Manage
             return await _departmentBus.GetTreeDataListAsync(input);
         }
 
+        [HttpPost]
+        public async Task<List<DepartmentCoinConfigDTO>> GetCoinConfigList(IdInputDTO input)
+        { 
+            return await _departmentBus.GetCoinConfigListAsync(input.id);
+        }
         #endregion
 
         #region 提交
 
         [HttpPost]
-        public async Task SaveData(Base_Department theData)
+        public async Task SaveData(DepartmentEditInputDTO theData)
         {
             if (theData.Id.IsNullOrEmpty())
             {

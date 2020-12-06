@@ -15,7 +15,7 @@ namespace Coldairarrow.Entity.Foundation
         /// ID
         /// </summary>
         [Key, Column(Order = 1)]
-        public String ID { get; set; }
+        public String Id { get; set; }
 
         /// <summary>
         /// TenantId
@@ -23,21 +23,25 @@ namespace Coldairarrow.Entity.Foundation
         public String TenantId { get; set; }
 
         /// <summary>
-        /// Currency
+        /// 
         /// </summary>
-        public String Currency { get; set; }
+        public String CoinID { get; set; }
 
+        public string CoinConfigID { set; get; }
         /// <summary>
         /// 最小充币
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public Decimal CoinInMinAmount { get; set; }
+        public Decimal? CoinInMinAmount { get; set; }
 
         /// <summary>
         /// 最小提币
         /// </summary>
         [Column(TypeName = "decimal(28, 16)")]
-        public Decimal CoinOutMinAmount { get; set; }
+        public Decimal? CoinOutMinAmount { get; set; }
+
+        [Column(TypeName = "decimal(28, 16)")]
+        public Decimal? CoinOutMaxAmount { get; set; } 
 
         /// <summary>
         /// CreateTime

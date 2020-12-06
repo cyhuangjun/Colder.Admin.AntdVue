@@ -39,9 +39,9 @@ namespace Coldairarrow.Entity.Transaction
         public TransfersStatus Status { get; set; }
 
         /// <summary>
-        /// Currency
+        /// 
         /// </summary>
-        public String Currency { get; set; }
+        public String CoinID { get; set; }
 
         /// <summary>
         /// Amount

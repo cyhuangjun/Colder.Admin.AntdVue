@@ -234,9 +234,9 @@ namespace Coldairarrow.Business.Market
                 result.Msg = "tenantId not exist.";
                 return result;
             }
-            var balance = await this._assetsBusiness.GetBalance(tenantId, request.Currency);
+            var balance = await this._assetsBusiness.GetBalance(tenantId, coin.Id);
             var coinConfig = await this._coinConfigBusiness.GetEntityAsync(tenantId, coin.Code);
-            var fee = 0m; 
+            var fee = 0m;
             if (coinConfig != null)
             {
                 // 固定手续费
@@ -256,7 +256,7 @@ namespace Coldairarrow.Business.Market
                 result.ErrorCode = ErrorCodeDefine.CryptocurrencyAssetsNotEnought;
                 result.Msg = $"Cryptocurrency {request.Currency} Assets Not Enought!";
                 return result;
-            }            
+            }
             var minAmountConfig = await this._coinConfigBusiness.MinAmountAsync(tenantId, request.Currency);
             if (minAmountConfig != null)
             {
@@ -289,33 +289,30 @@ namespace Coldairarrow.Business.Market
                 AddressTo = request.AddressTo,
                 Amount = request.Amount,
                 CreatedAt = DateTime.Now,
-                Currency = request.Currency,
-                HandlingFee = fee, 
+                CoinID = coin.Id,
+                HandlingFee = fee,
                 OrderDescription = request.OrderDescription,
                 OrderId = request.OrderId,
                 Status = TransfersStatus.Waiting,
                 UpdatedAt = DateTime.Now,
                 TenantId = tenantId,
-            }; 
+            };
 
-            var coinTo = await this._coinBusiness.GetCoinByCodeAsync(request.Currency);
-            if (coinTo != null)
+            var coinTransactionOut = new CoinTransactionOut()
             {
-                var coinTransactionOut = new CoinTransactionOut()
-                {
-                    Id = Guid.NewGuid().GuidTo16String(),
-                    Address = transfers.AddressTo,
-                    AddressTag = string.Empty,
-                    Amount = transfers.Amount,
-                    CoinID = coinTo.Id,
-                    CreateTime = DateTime.Now,
-                    LastUpdateTime = DateTime.Now, 
-                    Status = TransactionStatus.Apply,
-                    TenantId = tenantId,
-                };
-                await _db.InsertAsync(coinTransactionOut);
-                transfers.TransactionOutID = coinTransactionOut.Id;
-            }
+                Id = Guid.NewGuid().GuidTo16String(),
+                Address = transfers.AddressTo,
+                AddressTag = string.Empty,
+                Amount = transfers.Amount,
+                CoinID = coin.Id,
+                CreateTime = DateTime.Now,
+                LastUpdateTime = DateTime.Now,
+                Status = TransactionStatus.Apply,
+                TenantId = tenantId,
+            };
+            await _db.InsertAsync(coinTransactionOut);
+            transfers.TransactionOutID = coinTransactionOut.Id;
+
             await _db.InsertAsync(transfers);
 
             result.Success = true;
@@ -324,7 +321,7 @@ namespace Coldairarrow.Business.Market
             {
                 AddressTo = transfers.AddressTo,
                 Amount = transfers.Amount,
-                Currency = transfers.Currency,
+                Currency = request.Currency,
                 OrderDescription = transfers.OrderDescription,
                 OrderId = transfers.OrderId,
                 Status = transfers.Status,
@@ -342,6 +339,7 @@ namespace Coldairarrow.Business.Market
                 return new AjaxResult<TransfersViewDto>() { ErrorCode = ErrorCodeDefine.ParameterInvalid, Success = false, Msg = "Parameter Invalid!" };
             if (transfers.TenantId != tenantId)
                 return new AjaxResult<TransfersViewDto>() { ErrorCode = ErrorCodeDefine.IllegalOperation, Success = false, Msg = "Illegal Operation!" };
+            var coin = await this._cacheDataBusiness.GetCoinAsync(transfers.CoinID);
             return new AjaxResult<TransfersViewDto>()
             {
                 Success = true,
@@ -350,7 +348,7 @@ namespace Coldairarrow.Business.Market
                 {
                     AddressTo = transfers.AddressTo,
                     Amount = transfers.Amount,
-                    Currency = transfers.Currency,
+                    Currency = coin.Code,
                     OrderDescription = transfers.OrderDescription,
                     OrderId = transfers.OrderId,
                     Status = transfers.Status,
