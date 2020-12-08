@@ -62,10 +62,6 @@ export default {
   },
   methods: {
     handleChange(value, key, column, list) {
-      console.log(this.data)
-      console.log([...this.data])
-      console.log(this.CurrencyList)
-      console.log([...this.CurrencyList])
       var obj = JSON.parse(JSON.stringify(list.filter(item => value === item.value)))
       value = obj[0].text      
       const newData = [...this.data]

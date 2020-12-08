@@ -7,9 +7,11 @@ using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Foundation
@@ -31,20 +33,27 @@ namespace Coldairarrow.Business.Foundation
 
         #region 外部接口
 
-        public async Task<PageResult<CoinConfig>> GetDataListAsync(PageInput<ConditionDTO> input)
-        {
-            var q = GetIQueryable();
-            var where = LinqHelper.True<CoinConfig>();
+        public async Task<PageResult<CoinConfigDTO>> GetDataListAsync(PageInput<ConditionDTO> input)
+        { 
+            var where = LinqHelper.True<CoinConfigDTO>();
+            Expression<Func<CoinConfig, Coin, CoinConfigDTO>> select = (a, b) => new CoinConfigDTO
+            {
+                Currency = b.Code,
+                IsDefaultStr = (a.IsDefault? "是":"否")
+            };
             var search = input.Search;
+            select = select.BuildExtendSelectExpre();
+            var q = from a in GetIQueryable().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    select @select.Invoke(a, b); 
 
-            //筛选
             if (!search.Condition.IsNullOrEmpty() && !search.Keyword.IsNullOrEmpty())
             {
-                var newWhere = DynamicExpressionParser.ParseLambda<CoinConfig, bool>(
+                var newWhere = DynamicExpressionParser.ParseLambda<CoinConfigDTO, bool>(
                     ParsingConfig.Default, false, $@"{search.Condition}.Contains(@0)", search.Keyword);
                 where = where.And(newWhere);
             }
-
             return await q.Where(where).GetPageResultAsync(input);
         }
 

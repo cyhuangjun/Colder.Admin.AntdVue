@@ -47,7 +47,7 @@ namespace Coldairarrow.Entity.Transaction
         /// RowVersion
         /// </summary>
         [Timestamp]
-        public DateTime RowVersion { get; set; }
+        public byte[] RowVersion { get; set; }
 
     }
 }

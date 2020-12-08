@@ -23,7 +23,7 @@
             placeholder="请选择上级部门"
             treeDefaultExpandAll
           ></a-tree-select>
-        </a-form-model-item> 
+        </a-form-model-item>
         <a-form-model-item label="冻结" prop="IsFrozen">
           <a-checkbox v-model="entity.IsFrozen"/>
         </a-form-model-item>
@@ -32,7 +32,7 @@
         </a-form-model-item>
         <a-form-model-item label="密钥" prop="SecretKey">
           <a-input v-model="entity.SecretKey" autocomplete="off" />
-        </a-form-model-item> 
+        </a-form-model-item>
         <a-form-model-item label="充币回调地址" prop="PaymentCallbackUrl">
           <a-input v-model="entity.PaymentCallbackUrl" autocomplete="off" />
         </a-form-model-item>
@@ -41,7 +41,7 @@
         </a-form-model-item>
         <a-card title="充提设置" :bordered="false">
           <CoinConfig-List ref="coinConfigList" :parentObj="this"></CoinConfig-List>
-        </a-card>        
+        </a-card>
       </a-form-model>
     </a-spin>
   </a-modal>
@@ -59,7 +59,7 @@ export default {
   components: {
     CoinConfigList
   },
-  data() {
+  data () {
     return {
       layout: {
         labelCol: { span: 5 },
@@ -71,12 +71,13 @@ export default {
       ParentIdTreeData: [],
       CoinConfigData: [],
       rules: {
-        Name: [{ required: true, message: '必填' }]
+        Name: [{ required: true, message: '必填' }],
+        Code: [{ required: true, message: '必填' }]
       }
     }
   },
   methods: {
-    init(id) {
+    init (id) {
       this.visible = true
       this.entity = {}
       this.$nextTick(() => {
@@ -93,7 +94,7 @@ export default {
         this.CoinConfigData = resJson.Data
       })
     },
-    openForm(id) {
+    openForm (id) {
       this.init(id)
 
       if (id) {
@@ -102,7 +103,7 @@ export default {
         })
       }
     },
-    handleSubmit() {
+    handleSubmit () {
       this.$refs['form'].validate(valid => {
         if (!valid) {
           return

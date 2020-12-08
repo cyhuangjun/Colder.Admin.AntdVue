@@ -12,7 +12,7 @@ namespace Coldairarrow.IBusiness
         /// 当前操作者UserId
         /// </summary>
         string UserId { get; }
-
+        string TenantId { get; }
         Base_UserDTO Property { get; }
 
         #region 操作方法

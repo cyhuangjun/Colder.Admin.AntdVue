@@ -24,7 +24,7 @@ namespace Coldairarrow.Api.Controllers.Foundation
         #region 获取
 
         [HttpPost]
-        public async Task<PageResult<CoinConfig>> GetDataList(PageInput<ConditionDTO> input)
+        public async Task<PageResult<CoinConfigDTO>> GetDataList(PageInput<ConditionDTO> input)
         {
             return await _coinConfigBus.GetDataListAsync(input);
         }

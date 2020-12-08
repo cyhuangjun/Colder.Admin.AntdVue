@@ -71,7 +71,8 @@ namespace Coldairarrow.Api.Controllers.Base_Manage
         #endregion
 
         #region 提交
-
+        [ApiPermission("Base_Action.Add")]
+        [ApiPermission("Base_Action.Edit")]
         [HttpPost]
         public async Task SaveData(ActionEditInputDTO input)
         {
@@ -86,7 +87,8 @@ namespace Coldairarrow.Api.Controllers.Base_Manage
                 await _actionBus.UpdateDataAsync(input);
             }
         }
-
+         
+        [ApiPermission("Base_Action.Add")]
         [HttpPost]
         public async Task DeleteData(List<string> ids)
         {

@@ -1,11 +1,15 @@
-﻿using Coldairarrow.Entity.Transaction;
+﻿using Coldairarrow.Entity.Base_Manage;
+using Coldairarrow.Entity.Foundation;
+using Coldairarrow.Entity.Transaction;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Threading.Tasks; 
 
 namespace Coldairarrow.Business.Transaction
@@ -18,6 +22,50 @@ namespace Coldairarrow.Business.Transaction
         }
 
         #region 外部接口
+        public async Task<PageResult<CoinTransactionInReportDTO>> GetReportDataListAsync(PageInput<CoinTransactionInInputDTO> input)
+        {
+            Expression<Func<CoinTransactionIn, Coin, Base_Department, Coin, Wallet, CoinTransactionInReportDTO>> select = (a, b, c, d, e) => new CoinTransactionInReportDTO
+            {
+                Currency = b.Code,
+                Tenant = c.Name,
+                MinefeeCurrency = d.Code,
+                CUID = e.UID
+            };
+            select = select.BuildExtendSelectExpre();
+            var q = from a in this.Db.GetIQueryable<CoinTransactionIn>().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    join c in Db.GetIQueryable<Base_Department>() on a.TenantId equals c.Id into ac
+                    from c in ac.DefaultIfEmpty()                   
+                    join d in Db.GetIQueryable<Coin>() on a.MinefeeCoinID equals d.Id into ad
+                    from d in ad.DefaultIfEmpty()
+                    join e in Db.GetIQueryable<Wallet>() on a.Address equals e.Address into ae
+                    from e in ae.DefaultIfEmpty()
+                    select @select.Invoke(a, b, c, d, e);
+            //筛选
+            var where = LinqHelper.True<CoinTransactionInReportDTO>();
+            var search = input.Search;
+            if (!string.IsNullOrEmpty(search.CoinID))
+                where = where.And(x => x.CoinID == search.CoinID);
+            if (search.Status.HasValue)
+                where = where.And(x => x.Status == search.Status.Value);
+            if (!search.SearchKey.IsNullOrEmpty())
+                where = where.And(x => x.CUID.Contains(search.SearchKey) || x.FromAddress.Contains(search.SearchKey) || x.Address.Contains(search.SearchKey) || x.Tenant.Contains(search.SearchKey) || x.Id.Contains(search.SearchKey));
+            if (!search.startTime.IsNullOrEmpty())
+                where = where.And(x => x.CreateTime >= search.startTime);
+            if (!search.endTime.IsNullOrEmpty())
+                where = where.And(x => x.CreateTime < search.endTime);
+            if (!string.IsNullOrEmpty(search.TenantId))
+                where = where.And(x => x.TenantId == search.TenantId);
+            if (!string.IsNullOrEmpty(search.Id))
+                where = where.And(x => x.Id == search.Id);
+            return await q.Where(where).GetPageResultAsync(input);
+        }
+
+        public async Task<CoinTransactionInReportDTO> GetTheReportDataAsync(string id)
+        {
+            return (await this.GetReportDataListAsync(new PageInput<CoinTransactionInInputDTO>() { Search = new CoinTransactionInInputDTO() { Id = id } })).Data.FirstOrDefault(e => e.Id == id);
+        }
 
         public async Task<PageResult<CoinTransactionIn>> GetDataListAsync(PageInput<ConditionDTO> input)
         {

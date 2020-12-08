@@ -21,11 +21,14 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// 
         /// </summary>
+        [Required]
         public String CoinID { get; set; }
 
         /// <summary>
-        /// 说明
+        /// 名称
         /// </summary>
+        [Required]
+        [Display(Name = "名称")]
         public String Caption { get; set; }
 
         /// <summary>
@@ -43,23 +46,27 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// MinerFeeModeType
         /// </summary>
-        public Int32 MinerFeeModeType { get; set; }
+        [Required]
+        public FeeMode MinerFeeModeType { get; set; }
 
         /// <summary>
         /// 最小充币
         /// </summary>
+        [Required]
         [Column(TypeName = "decimal(28, 16)")]
         public Decimal CoinInMinAmount { get; set; }
 
         /// <summary>
         /// 最小提币
         /// </summary>
+        [Required]
         [Column(TypeName = "decimal(28, 16)")]
         public Decimal CoinOutMinAmount { get; set; }
 
         /// <summary>
-        /// 最小充币
+        /// 最大提币
         /// </summary>
+        [Required]
         [Column(TypeName = "decimal(28, 16)")]
         public Decimal CoinOutMaxAmount { get; set; }
 
@@ -78,6 +85,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// 充币费用类型，1固定，2比例
         /// </summary>
+        [Required]
         public FeeMode CoinInHandlingFeeModeType { get; set; }
 
         /// <summary>
@@ -101,6 +109,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// CoinOutHandlingFeeModeType
         /// </summary>
+        [Required]
         public FeeMode CoinOutHandlingFeeModeType { get; set; }
 
         /// <summary>
@@ -112,6 +121,8 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// 是否默认
         /// </summary>
+        [Required]
+        [Display(Name = "默认")]
         public Boolean IsDefault { get; set; }
 
         /// <summary>
@@ -122,7 +133,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// CreatorID
         /// </summary>
-        public String CreatorID { get; set; }
+        public String CreatorId { get; set; }
 
         /// <summary>
         /// LastUpdateTime
@@ -132,7 +143,7 @@ namespace Coldairarrow.Entity.Foundation
         /// <summary>
         /// LastUpdateUserID
         /// </summary>
-        public String LastUpdateUserID { get; set; }
+        public String LastUpdateUserId { get; set; }
 
     }
 }

@@ -1,5 +1,6 @@
 ﻿using CCPP.Cryptocurrency.Common;
 using Coldairarrow.Entity;
+using Coldairarrow.Entity.Base_Manage;
 using Coldairarrow.Entity.DTO;
 using Coldairarrow.Entity.Enum;
 using Coldairarrow.Entity.Foundation;
@@ -40,15 +41,18 @@ namespace Coldairarrow.Business.Transaction
 
         public async Task<PageResult<TransfersOutDTO>> GetDataListAsync(PageInput<TransfersInputDTO> input)
         {
-            Expression<Func<Transfers, Coin, TransfersOutDTO>> select = (a, b) => new TransfersOutDTO
+            Expression<Func<Transfers, Coin, Base_Department, TransfersOutDTO>> select = (a, b, c) => new TransfersOutDTO
             {
-                Currency = b.Code
+                Currency = b.Code,
+                Tenant = c.Name
             };
             select = select.BuildExtendSelectExpre();
             var q = from a in this.Db.GetIQueryable<Transfers>().AsExpandable()
                     join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
                     from b in ab.DefaultIfEmpty()
-                    select @select.Invoke(a, b); 
+                    join c in Db.GetIQueryable<Base_Department>() on a.TenantId equals c.Id into ac
+                    from c in ac.DefaultIfEmpty()
+                    select @select.Invoke(a, b, c); 
             //筛选
             var where = LinqHelper.True<TransfersOutDTO>();
             var search = input.Search;
@@ -62,13 +66,63 @@ namespace Coldairarrow.Business.Transaction
                 where = where.And(x => x.CreatedAt >= search.startTime);
             if (!search.endTime.IsNullOrEmpty())
                 where = where.And(x => x.CreatedAt < search.endTime);
+            if (!string.IsNullOrEmpty(search.TenantId))
+                where = where.And(x=>x.TenantId == search.TenantId);
+            //if (!string.IsNullOrEmpty(search.Id))
+            //    where = where.And(x => x.Id == search.Id);
             return await q.Where(where).GetPageResultAsync(input);
         }
 
         public async Task<Transfers> GetTheDataAsync(string id)
         {
             return await GetEntityAsync(id);
-        } 
+        }
+
+        public async Task<PageResult<TransfersOutReportDTO>> GetReportDataListAsync(PageInput<TransfersInputDTO> input)
+        {
+            Expression<Func<Transfers, Coin, Base_Department, CoinTransactionOut, Coin, TransfersOutReportDTO>> select = (a, b, c, d, e) => new TransfersOutReportDTO
+            {
+                Currency = b.Code,
+                Tenant = c.Name,
+                Minefee = d.Minefee,
+                MinefeeCurrency = e.Code,
+                AddressTag = d.AddressTag
+            };
+            select = select.BuildExtendSelectExpre();
+            var q = from a in this.Db.GetIQueryable<Transfers>().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    join c in Db.GetIQueryable<Base_Department>() on a.TenantId equals c.Id into ac
+                    from c in ac.DefaultIfEmpty()
+                    join d in Db.GetIQueryable<CoinTransactionOut>() on a.TransactionOutID equals d.Id into ad
+                    from d in ad.DefaultIfEmpty()
+                    join e in Db.GetIQueryable<Coin>() on d.CoinID equals e.Id into de
+                    from e in de.DefaultIfEmpty()
+                    select @select.Invoke(a, b, c, d, e);
+            //筛选
+            var where = LinqHelper.True<TransfersOutReportDTO>();
+            var search = input.Search;
+            if (!string.IsNullOrEmpty(search.Currency))
+                where = where.And(x => x.Currency == search.Currency);
+            if (search.Status.HasValue)
+                where = where.And(x => x.Status == search.Status.Value);
+            if (!search.SearchKey.IsNullOrEmpty())
+                where = where.And(x => x.OrderDescription.Contains(search.SearchKey) || x.OrderId.Contains(search.SearchKey) || x.Id.Contains(search.SearchKey));
+            if (!search.startTime.IsNullOrEmpty())
+                where = where.And(x => x.CreatedAt >= search.startTime);
+            if (!search.endTime.IsNullOrEmpty())
+                where = where.And(x => x.CreatedAt < search.endTime);
+            if (!string.IsNullOrEmpty(search.TenantId))
+                where = where.And(x => x.TenantId == search.TenantId);
+            if (!string.IsNullOrEmpty(search.Id))
+                where = where.And(x => x.Id == search.Id);
+            return await q.Where(where).GetPageResultAsync(input);
+        }
+
+        public async Task<TransfersOutReportDTO> GetTheReportDataAsync(string id)
+        {
+            return (await this.GetReportDataListAsync(new PageInput<TransfersInputDTO>() { Search = new TransfersInputDTO() { Id = id } })).Data.FirstOrDefault(e=>e.Id == id);
+        }
 
         public async Task UpdateDataAsync(Transfers data)
         {
