@@ -18,11 +18,8 @@
           <a-col :md="4" :sm="24">
             <a-form-item label="查询类别">
               <a-select allowClear v-model="queryParam.condition">
-                <a-select-option key="ID">ID</a-select-option>
-                <a-select-option key="Currency">Currency</a-select-option>
-                <a-select-option key="Caption">说明</a-select-option>
-                <a-select-option key="CreatorID">CreatorID</a-select-option>
-                <a-select-option key="LastUpdateUserID">LastUpdateUserID</a-select-option>
+                <a-select-option key="Currency">币种</a-select-option>
+                <a-select-option key="Caption">名称</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -68,38 +65,34 @@
 import EditForm from './EditForm'
 
 const columns = [
-  { title: 'ID', dataIndex: 'ID', width: '10%' },
-  { title: 'Currency', dataIndex: 'Currency', width: '10%' },
-  { title: '说明', dataIndex: 'Caption', width: '10%' },
-  { title: 'MinerFee', dataIndex: 'MinerFee', width: '10%' },
-  { title: 'MinerFeeRate', dataIndex: 'MinerFeeRate', width: '10%' },
-  { title: 'MinerFeeModeType', dataIndex: 'MinerFeeModeType', width: '10%' },
-  { title: '最小充币', dataIndex: 'CoinInMinAmount', width: '10%' },
-  { title: '最小提币', dataIndex: 'CoinOutMinAmount', width: '10%' },
-  { title: '最小充币', dataIndex: 'CoinOutMaxAmount', width: '10%' },
-  { title: '充币手续费', dataIndex: 'CoinInHandlingFee', width: '10%' },
-  { title: '充币手续费率', dataIndex: 'CoinInHandlingFeeRate', width: '10%' },
-  { title: '充币费用类型，1固定，2比例', dataIndex: 'CoinInHandlingFeeModeType', width: '10%' },
-  { title: 'CoinInHandlingMinFee', dataIndex: 'CoinInHandlingMinFee', width: '10%' },
-  { title: '提币手续费', dataIndex: 'CoinOutHandlingFee', width: '10%' },
-  { title: '提币手续费率', dataIndex: 'CoinOutHandlingFeeRate', width: '10%' },
-  { title: 'CoinOutHandlingFeeModeType', dataIndex: 'CoinOutHandlingFeeModeType', width: '10%' },
-  { title: 'CoinOutHandlingMinFee', dataIndex: 'CoinOutHandlingMinFee', width: '10%' },
-  { title: '是否默认', dataIndex: 'IsDefault', width: '10%' },
-  { title: 'CreatorID', dataIndex: 'CreatorID', width: '10%' },
-  { title: 'LastUpdateTime', dataIndex: 'LastUpdateTime', width: '10%' },
-  { title: 'LastUpdateUserID', dataIndex: 'LastUpdateUserID', width: '10%' },
-  { title: '操作', dataIndex: 'action', scopedSlots: { customRender: 'action' } }
+  { title: '币种', dataIndex: 'Currency', width: '100px', align: 'center' },
+  { title: '名称', dataIndex: 'Caption', width: '120px', align: 'center' },
+  { title: '最小充币', dataIndex: 'CoinInMinAmount', width: '5%', align: 'center' },
+  { title: '最小提币', dataIndex: 'CoinOutMinAmount', width: '5%', align: 'center' },
+  { title: '最大提币', dataIndex: 'CoinOutMaxAmount', width: '5%', align: 'center' },
+  { title: '费(矿)', dataIndex: 'MinerFee', width: '5%', align: 'center' },
+  { title: '费率(矿)', dataIndex: 'MinerFeeRate', width: '5%', align: 'center' },
+  { title: '费类型(矿)', dataIndex: 'MinerFeeModeTypeStr', width: '5%', align: 'center' },
+  { title: '费(充)', dataIndex: 'CoinInHandlingFee', width: '5%', align: 'center' },
+  { title: '费率(充)', dataIndex: 'CoinInHandlingFeeRate', width: '5%', align: 'center' },
+  { title: '费类型(充)', dataIndex: 'CoinInHandlingFeeModeTypeStr', width: '5%', align: 'center' },
+  { title: '最小费(充)', dataIndex: 'CoinInHandlingMinFee', width: '5%', align: 'center' },
+  { title: '费(提)', dataIndex: 'CoinOutHandlingFee', width: '5%', align: 'center' },
+  { title: '费率(提)', dataIndex: 'CoinOutHandlingFeeRate', width: '5%', align: 'center' },
+  { title: '费类型(提)', dataIndex: 'CoinOutHandlingFeeModeTypeStr', width: '5%', align: 'center' },
+  { title: '最小费(提)', dataIndex: 'CoinOutHandlingMinFee', width: '5%', align: 'center' },
+  { title: '默认', dataIndex: 'IsDefaultStr', width: '50px', align: 'center' },
+  { title: '操作', dataIndex: 'action', align: 'center', width: '100px', scopedSlots: { customRender: 'action' } }
 ]
 
 export default {
   components: {
     EditForm
   },
-  mounted() {
+  mounted () {
     this.getDataList()
   },
-  data() {
+  data () {
     return {
       data: [],
       pagination: {
@@ -116,13 +109,13 @@ export default {
     }
   },
   methods: {
-    handleTableChange(pagination, filters, sorter) {
+    handleTableChange (pagination, filters, sorter) {
       this.pagination = { ...pagination }
       this.filters = { ...filters }
       this.sorter = { ...sorter }
       this.getDataList()
     },
-    getDataList() {
+    getDataList () {
       this.selectedRowKeys = []
 
       this.loading = true
@@ -143,23 +136,23 @@ export default {
           this.pagination = pagination
         })
     },
-    onSelectChange(selectedRowKeys) {
+    onSelectChange (selectedRowKeys) {
       this.selectedRowKeys = selectedRowKeys
     },
-    hasSelected() {
+    hasSelected () {
       return this.selectedRowKeys.length > 0
     },
-    hanldleAdd() {
+    hanldleAdd () {
       this.$refs.editForm.openForm()
     },
-    handleEdit(id) {
+    handleEdit (id) {
       this.$refs.editForm.openForm(id)
     },
-    handleDelete(ids) {
+    handleDelete (ids) {
       var thisObj = this
       this.$confirm({
         title: '确认删除吗?',
-        onOk() {
+        onOk () {
           return new Promise((resolve, reject) => {
             thisObj.$http.post('/Foundation/CoinConfig/DeleteData', ids).then(resJson => {
               resolve()

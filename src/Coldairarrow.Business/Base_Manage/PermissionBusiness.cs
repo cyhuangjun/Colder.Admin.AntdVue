@@ -67,5 +67,11 @@ namespace Coldairarrow.Business.Base_Manage
                 .Select(x => x.Value)
                 .ToList();
         }
+
+        public async Task<List<Base_Action>> GetUserActionListAsync(string userId)
+        {
+            var actionIds = await GetUserActionIds(userId);
+            return await this._actionBus.GetListAsync(x => actionIds.Contains(x.Id));
+        }
     }
 }

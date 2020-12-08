@@ -42,8 +42,9 @@ namespace Coldairarrow.Api.Controllers.Base_Manage
 
         #endregion
 
-        #region 提交
-
+        #region 
+        [ApiPermission("Base_Role.Add")]
+        [ApiPermission("Base_Role.Edit")]
         [HttpPost]
         public async Task SaveData(Base_RoleInfoDTO input)
         {
@@ -59,6 +60,7 @@ namespace Coldairarrow.Api.Controllers.Base_Manage
             }
         }
 
+        [ApiPermission("Base_Role.Delete")]
         [HttpPost]
         public async Task DeleteData(List<string> ids)
         {

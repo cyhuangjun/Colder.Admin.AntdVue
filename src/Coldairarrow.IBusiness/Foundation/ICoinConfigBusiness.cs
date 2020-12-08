@@ -10,7 +10,7 @@ namespace Coldairarrow.Business.Foundation
 {
     public interface ICoinConfigBusiness
     {
-        Task<PageResult<CoinConfig>> GetDataListAsync(PageInput<ConditionDTO> input);
+        Task<PageResult<CoinConfigDTO>> GetDataListAsync(PageInput<ConditionDTO> input);
         Task<CoinConfig> GetTheDataAsync(string id);
         Task AddDataAsync(CoinConfig data);
         Task UpdateDataAsync(CoinConfig data);
@@ -24,5 +24,37 @@ namespace Coldairarrow.Business.Foundation
         Task<List<CoinConfig>> GetListAsync(Expression<Func<CoinConfig, bool>> expression);
         List<CoinConfig> GetList<TKey>(Expression<Func<CoinConfig, bool>> expression, Expression<Func<CoinConfig, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
         Task<List<CoinConfig>> GetListAsync<TKey>(Expression<Func<CoinConfig, bool>> expression, Expression<Func<CoinConfig, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
+    }
+
+    [Map(typeof(CoinConfig))]
+    public class CoinConfigDTO : CoinConfig
+    {
+        public string Currency { set; get; }
+
+        public string IsDefaultStr { set; get; }
+
+        public string MinerFeeModeTypeStr
+        {
+            get
+            {
+                return this.MinerFeeModeType.GetDescription();
+            }
+        }
+
+        public string CoinInHandlingFeeModeTypeStr
+        {
+            get
+            {
+                return this.CoinInHandlingFeeModeType.GetDescription();
+            }
+        }
+
+        public string CoinOutHandlingFeeModeTypeStr
+        {
+            get
+            {
+                return this.CoinOutHandlingFeeModeType.GetDescription();
+            }
+        }
     }
 }

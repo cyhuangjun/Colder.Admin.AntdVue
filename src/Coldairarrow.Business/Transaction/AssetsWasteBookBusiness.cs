@@ -1,11 +1,15 @@
-﻿using Coldairarrow.Entity.Transaction;
+﻿using Coldairarrow.Entity.Base_Manage;
+using Coldairarrow.Entity.Foundation;
+using Coldairarrow.Entity.Transaction;
 using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Transaction
@@ -19,20 +23,27 @@ namespace Coldairarrow.Business.Transaction
 
         #region 外部接口
 
-        public async Task<PageResult<AssetsWasteBook>> GetDataListAsync(PageInput<ConditionDTO> input)
+        public async Task<PageResult<AssetsWasteBookOutDTO>> GetDataListAsync(PageInput<AssetsWasteBookInputDTO> input)
         {
-            var q = GetIQueryable();
-            var where = LinqHelper.True<AssetsWasteBook>();
-            var search = input.Search;
-
-            //筛选
-            if (!search.Condition.IsNullOrEmpty() && !search.Keyword.IsNullOrEmpty())
+            Expression<Func<AssetsWasteBook, Coin, Base_Department, AssetsWasteBookOutDTO>> select = (a, b, c) => new AssetsWasteBookOutDTO
             {
-                var newWhere = DynamicExpressionParser.ParseLambda<AssetsWasteBook, bool>(
-                    ParsingConfig.Default, false, $@"{search.Condition}.Contains(@0)", search.Keyword);
-                where = where.And(newWhere);
-            }
-
+                Currency = b.Code,
+                Tenant = c.Name
+            };
+            select = select.BuildExtendSelectExpre();
+            var q = from a in this.Db.GetIQueryable<AssetsWasteBook>().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    join c in Db.GetIQueryable<Base_Department>() on a.TenantId equals c.Id into ac
+                    from c in ac.DefaultIfEmpty()
+                    select @select.Invoke(a, b, c);
+            //筛选
+            var where = LinqHelper.True<AssetsWasteBookOutDTO>();
+            var search = input.Search;
+            if (!string.IsNullOrEmpty(search.CoinID))
+                where = where.And(x => x.CoinID == search.CoinID);
+            if (!string.IsNullOrEmpty(search.TenantId))
+                where = where.And(x => x.TenantId == search.TenantId);
             return await q.Where(where).GetPageResultAsync(input);
         }
 

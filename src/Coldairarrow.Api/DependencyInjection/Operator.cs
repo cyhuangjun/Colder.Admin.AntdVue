@@ -34,7 +34,13 @@ namespace Coldairarrow.Api
         /// 当前操作者UserId
         /// </summary>
         public string UserId { get; }
-
+        public string TenantId
+        {
+            get
+            {
+                return Property?.DepartmentId;
+            }
+        }
         /// <summary>
         /// 属性
         /// </summary>

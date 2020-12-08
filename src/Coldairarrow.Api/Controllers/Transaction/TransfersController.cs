@@ -1,11 +1,13 @@
 ﻿using Coldairarrow.Business.Transaction;
 using Coldairarrow.Entity.Enum;
 using Coldairarrow.Entity.Transaction;
+using Coldairarrow.IBusiness;
 using Coldairarrow.IBusiness.Core;
 using Coldairarrow.Util;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Coldairarrow.Api.Controllers.Transaction
 {
@@ -28,6 +30,9 @@ namespace Coldairarrow.Api.Controllers.Transaction
         [HttpPost]
         public async Task<PageResult<TransfersOutDTO>> GetDataList(PageInput<TransfersInputDTO> input)
         {
+            var op = HttpContext.RequestServices.GetService<IOperator>();
+            if (!op.IsAdmin())
+                input.Search.TenantId = op.TenantId;
             return await _transfersBus.GetDataListAsync(input);
         }
 
@@ -49,7 +54,22 @@ namespace Coldairarrow.Api.Controllers.Transaction
                 OrderDescription = theData.OrderDescription,
                 Status = theData.Status
             };
-        } 
+        }
+
+        [HttpPost]
+        public async Task<PageResult<TransfersOutReportDTO>> GetDataReportList(PageInput<TransfersInputDTO> input)
+        {
+            var op = HttpContext.RequestServices.GetService<IOperator>();
+            if (!op.IsAdmin())
+                input.Search.TenantId = op.TenantId;
+            return await _transfersBus.GetReportDataListAsync(input);
+        }
+
+        [HttpPost]
+        public async Task<TransfersOutReportDTO> GetTheDataReport(IdInputDTO input)
+        {
+            return await _transfersBus.GetTheReportDataAsync(input.id); 
+        }
 
         [HttpPost]
         public List<SelectOption> GetTransactionStatusList()

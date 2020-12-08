@@ -1,18 +1,5 @@
-﻿<template>
+<template>
   <a-card :bordered="false">
-    <!--
-    <div class="table-operator">
-      <a-button type="primary" icon="plus" @click="hanldleAdd()">新建</a-button>
-      <a-button
-        type="primary"
-        icon="minus"
-        @click="handleDelete(selectedRowKeys)"
-        :disabled="!hasSelected()"
-        :loading="loading"
-      >删除</a-button>
-      <a-button type="primary" icon="redo" @click="getDataList()">刷新</a-button>
-  </div>-->
-
     <div class="table-page-search-wrapper">
       <a-form layout="inline">
         <a-row :gutter="20">
@@ -71,29 +58,25 @@
       <span slot="action" slot-scope="text, record">
         <template>
           <a @click="showDetail(record.Id)">详细</a>
-          <a-divider type="vertical" v-if="record.Status==0" />
-          <a v-if="record.Status==0" @click="handlePass(record.Id)">通过</a>
-          <a-divider type="vertical" v-if="record.Status==0" />
-          <a v-if="record.Status==0" @click="handleDeny(record.Id)">拒绝</a>
         </template>
       </span>
     </a-table>
-
     <detail-form ref="detailForm" :parentObj="this"></detail-form>
   </a-card>
 </template>
 
 <script>
 import DetailForm from './Detail'
-
 const columns = [
   { title: '商户', dataIndex: 'Tenant', width: '8%', align: 'center' },
   { title: '订单号', dataIndex: 'Id', width: '10%', align: 'center' },
   { title: '商户单号', dataIndex: 'OrderId', width: '10%', align: 'center' },
   { title: '币种', dataIndex: 'Currency', width: '10%', align: 'center', sorter: true },
   { title: '数量', dataIndex: 'Amount', width: '10%', align: 'center' },
-  { title: '手续费', dataIndex: 'HandlingFee', width: '10%', align: 'center' },
+  { title: '手续费', dataIndex: 'HandlingFee', width: '5%', align: 'center' },
+  { title: '矿工费', dataIndex: 'Minefee', width: '5%', align: 'center' },
   { title: '状态', dataIndex: 'StatusStr', width: '5%', align: 'center', sorter: true },
+  { title: '回调状态', dataIndex: 'CallBackStatusStr', width: '5%', align: 'center' },
   { title: '创建时间', dataIndex: 'CreatedAt', width: '10%', align: 'center', sorter: true },
   { title: '审核时间', dataIndex: 'ApproveTime', width: '10%', align: 'center', sorter: true },
   { title: '操作', dataIndex: 'action', align: 'center', scopedSlots: { customRender: 'action' } }
@@ -115,7 +98,7 @@ export default {
       data: [],
       pagination: {
         current: 1,
-        pageSize: 10,
+        pageSize: 25,
         showTotal: (total, range) => `总数:${total} 当前:${range[0]}-${range[1]}`
       },
       filters: {},
@@ -149,7 +132,7 @@ export default {
     getDataList () {
       this.loading = true
       this.$http
-        .post('/Transaction/Transfers/GetDataList', {
+        .post('/Transaction/Transfers/GetDataReportList', {
           PageIndex: this.pagination.current,
           PageRows: this.pagination.pageSize,
           SortField: this.sorter.field || 'Id',
@@ -167,48 +150,6 @@ export default {
     },
     showDetail (id) {
       this.$refs.detailForm.openForm(id)
-    },
-    handlePass (id) {
-      var thisObj = this
-      this.$confirm({
-        title: '确认通过吗?',
-        onOk () {
-          return new Promise((resolve, reject) => {
-            thisObj.$http.post('/Transaction/Transfers/PassData', { id: id }).then(resJson => {
-              resolve()
-
-              if (resJson.Success) {
-                thisObj.$message.success('操作成功!')
-
-                thisObj.getDataList()
-              } else {
-                thisObj.$message.error(resJson.Msg)
-              }
-            })
-          })
-        }
-      })
-    },
-    handleDeny (id) {
-      var thisObj = this
-      this.$confirm({
-        title: '确认拒绝吗?',
-        onOk () {
-          return new Promise((resolve, reject) => {
-            thisObj.$http.post('/Transaction/Transfers/DenyData', { id: id }).then(resJson => {
-              resolve()
-
-              if (resJson.Success) {
-                thisObj.$message.success('操作成功!')
-
-                thisObj.getDataList()
-              } else {
-                thisObj.$message.error(resJson.Msg)
-              }
-            })
-          })
-        }
-      })
     }
   }
 }

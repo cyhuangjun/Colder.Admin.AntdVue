@@ -12,6 +12,8 @@ namespace Coldairarrow.Business.Transaction
     {
         Task<PageResult<TransfersOutDTO>> GetDataListAsync(PageInput<TransfersInputDTO> input);
         Task<Transfers> GetTheDataAsync(string id);
+        Task<PageResult<TransfersOutReportDTO>> GetReportDataListAsync(PageInput<TransfersInputDTO> input);
+        Task<TransfersOutReportDTO> GetTheReportDataAsync(string id);
         Task UpdateDataAsync(Transfers data);
 
         Transfers GetEntity(Expression<Func<Transfers, bool>> expression);
@@ -26,6 +28,8 @@ namespace Coldairarrow.Business.Transaction
 
     public class TransfersInputDTO
     {
+        public string Id { set; get; }
+        public string TenantId { set; get; }
         public TransfersStatus? Status { get; set; }
         public string Currency { get; set; }
         public string SearchKey { get; set; }
@@ -36,6 +40,7 @@ namespace Coldairarrow.Business.Transaction
     [Map(typeof(Transfers))]
     public class TransfersOutDTO : Transfers
     { 
+        public string Tenant { set; get; }
         public string Currency { set; get; } 
         public string StatusStr
         {
@@ -44,5 +49,20 @@ namespace Coldairarrow.Business.Transaction
                 return Status.GetDescription();
             }
         }
-    } 
+    }
+
+    [Map(typeof(Transfers))]
+    public class TransfersOutReportDTO : TransfersOutDTO
+    {
+        public decimal? Minefee { set; get; }
+        public string MinefeeCurrency { set; get; }
+        public string AddressTag { set; get; }
+        public string CallBackStatusStr
+        {
+            get
+            {
+                return CallBackStatus?.GetDescription();
+            }
+        }
+    }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Coldairarrow.Entity;
+using Coldairarrow.Entity.Base_Manage;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Base_Manage
@@ -7,5 +9,6 @@ namespace Coldairarrow.Business.Base_Manage
     {
         Task<List<string>> GetUserPermissionValuesAsync(string userId);
         Task<List<Base_ActionDTO>> GetUserMenuListAsync(string userId);
+        Task<List<Base_Action>> GetUserActionListAsync(string userId);
     }
 }

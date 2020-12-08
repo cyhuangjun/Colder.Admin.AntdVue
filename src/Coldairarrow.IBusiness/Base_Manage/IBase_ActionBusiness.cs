@@ -4,6 +4,7 @@ using Coldairarrow.Util;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Coldairarrow.Business.Base_Manage
@@ -16,6 +17,12 @@ namespace Coldairarrow.Business.Base_Manage
         Task AddDataAsync(ActionEditInputDTO input);
         Task UpdateDataAsync(ActionEditInputDTO input);
         Task DeleteDataAsync(List<string> ids);
+
+        Task<Base_Action> GetEntityAsync(Expression<Func<Base_Action, bool>> expression);
+        List<Base_Action> GetList(Expression<Func<Base_Action, bool>> expression);
+        Task<List<Base_Action>> GetListAsync(Expression<Func<Base_Action, bool>> expression);
+        List<Base_Action> GetList<TKey>(Expression<Func<Base_Action, bool>> expression, Expression<Func<Base_Action, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
+        Task<List<Base_Action>> GetListAsync<TKey>(Expression<Func<Base_Action, bool>> expression, Expression<Func<Base_Action, TKey>> orderByDescending, int pageIndex, int pageSize = 20);
     }
 
     [Map(typeof(Base_Action))]

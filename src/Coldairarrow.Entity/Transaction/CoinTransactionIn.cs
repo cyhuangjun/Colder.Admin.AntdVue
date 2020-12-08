@@ -127,8 +127,6 @@ namespace Coldairarrow.Entity.Transaction
         [Column(TypeName = "decimal(28, 16)")]
         public decimal? ArrivalAmount { set; get; }
 
-        public string PaymentID { set; get; }
-
         [Timestamp]
         public byte[] RowVersion { get; set; }
 
