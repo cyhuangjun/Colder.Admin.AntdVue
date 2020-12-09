@@ -15,12 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Coldairarrow.Util\01.Coldairarrow.Util.csproj" />
+    <Folder Include="Admin\Request\" />
+    <Folder Include="Admin\Response\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Request\" />
-    <Folder Include="Admin\Response\" />
+    <ProjectReference Include="..\Coldairarrow.Util\01.Coldairarrow.Util.csproj" />
   </ItemGroup>
 
 </Project>
