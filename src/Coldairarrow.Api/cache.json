@@ -30,7 +30,7 @@
           "enablePerformanceCounters": true,
           "enableStatistics": true,
           "expirationMode": "Sliding",
-          "expirationTimeout": "0:0:59",
+          "expirationTimeout": "0:0:5",
           "isBackplaneSource": false,
           "name": "sys cache"
         },
@@ -38,7 +38,7 @@
           "knownType": "Redis",
           "key": "redisConnection",
           "expirationMode": "Sliding",
-          "expirationTimeout": "1:0:0",
+          "expirationTimeout": "0:0:30",
           "isBackplaneSource": true
         }
       ]

@@ -38,6 +38,25 @@ namespace Coldairarrow.Api.Controllers.Transaction
             return await _assetsBus.GetDataListAsync(input);
         }
 
+        [HttpPost]
+        public async Task<PageResult<WalletOutDTO>> GetWalletDataList(PageInput<WalletInputDTO> input)
+        {            
+            return await _assetsBus.GetWalletDataList(input);
+        }
+
+        [HttpPost]
+        public async Task<PageResult<WalletSystemAddressOutDTO>> GetWalletSystemAddressDataList(PageInput<WalletInputDTO> input)
+        {
+            return await _assetsBus.GetWalletSystemAddressDataList(input);
+        }
+
+        [HttpPost]
+        public async Task<AjaxResult> CreateSystemAddress(IdInputDTO idInput)
+        {
+            await _assetsBus.CreateSystemAddress(idInput.id);
+            return this.Success();
+        }
+
         //[HttpPost]
         //public async Task<Assets> GetTheData(IdInputDTO input)
         //{
