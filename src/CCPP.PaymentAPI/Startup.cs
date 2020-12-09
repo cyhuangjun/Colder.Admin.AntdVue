@@ -50,12 +50,12 @@ namespace CCPP.PaymentAPI
             //swagger
             services.AddOpenApiDocument(settings =>
             {
-                settings.Title = "¼ÓÃÜ»õ±ÒÖ§¸¶ÏµÍ³API";
+                settings.Title = "ï¿½ï¿½ï¿½Ü»ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ÏµÍ³API";
                 settings.AllowReferencesWithProperties = true;
-                settings.AddSecurity("Éí·ÝÈÏÖ¤Token", Enumerable.Empty<string>(), new OpenApiSecurityScheme()
+                settings.AddSecurity("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤Token", Enumerable.Empty<string>(), new OpenApiSecurityScheme()
                 {
                     Scheme = "bearer",
-                    Description = "Authorization:Bearer {your JWT token}<br/><b>ÊÚÈ¨µØÖ·:/Base_Manage/Home/SubmitLogin</b>",
+                    Description = "Authorization:Bearer {your JWT token}<br/><b>ï¿½ï¿½È¨ï¿½ï¿½Ö·:/Base_Manage/Home/SubmitLogin</b>",
                     Name = "Authorization",
                     In = OpenApiSecurityApiKeyLocation.Header,
                     Type = OpenApiSecuritySchemeType.Http
@@ -66,7 +66,7 @@ namespace CCPP.PaymentAPI
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //¿çÓò
+            //ï¿½ï¿½ï¿½ï¿½
             app.UseCors(x =>
             {
                 x.AllowAnyOrigin()
@@ -89,8 +89,8 @@ namespace CCPP.PaymentAPI
                 {
                     endpoints.MapControllers().RequireAuthorization();
                 })
-                .UseOpenApi()//Ìí¼ÓswaggerÉú³ÉapiÎÄµµ£¨Ä¬ÈÏÂ·ÓÉÎÄµµ /swagger/v1/swagger.json£©
-                .UseSwaggerUi3()//Ìí¼ÓSwagger UIµ½ÇëÇó¹ÜµÀÖÐ(Ä¬ÈÏÂ·ÓÉ: /swagger).
+                .UseOpenApi()//ï¿½ï¿½ï¿½ï¿½swaggerï¿½ï¿½ï¿½ï¿½apiï¿½Äµï¿½ï¿½ï¿½Ä¬ï¿½ï¿½Â·ï¿½ï¿½ï¿½Äµï¿½ /swagger/v1/swagger.jsonï¿½ï¿½
+                .UseSwaggerUi3()//ï¿½ï¿½ï¿½ï¿½Swagger UIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Üµï¿½ï¿½ï¿½(Ä¬ï¿½ï¿½Â·ï¿½ï¿½: /swagger).
                 ;
         }
     }

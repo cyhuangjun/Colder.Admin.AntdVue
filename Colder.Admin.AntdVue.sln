@@ -19,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "07.CCPP.Cryptocurrency.Comm
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "06.Coldairarrow.Console", "src\Coldairarrow.Console\06.Coldairarrow.Console.csproj", "{6CE4DDA0-F74A-4372-B179-DC0785477A12}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "08.CCPP.PaymentAPI", "CCPP.PaymentAPI\08.CCPP.PaymentAPI.csproj", "{A4C6978E-3CCD-48BC-9AE5-7DDA570FFA0C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "07.CCPP.Cryptocurrency.Common", "CCPP.Cryptocurrency.Common\07.CCPP.Cryptocurrency.Common.csproj", "{09AE7778-C846-46AF-A8F6-58765DC72A1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
