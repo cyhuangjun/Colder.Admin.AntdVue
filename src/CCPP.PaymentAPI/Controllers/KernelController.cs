@@ -17,7 +17,6 @@ namespace CCPP.PaymentAPI.Controllers
     /// </summary>
     [Route("api/v1/[action]")]
     [ApiController]
-    [ApiLog]
     [CheckApiKey]
     public class KernelController : BaseController
     {

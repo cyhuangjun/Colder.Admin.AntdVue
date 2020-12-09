@@ -1,3 +1,4 @@
+using Coldairarrow.Api;
 using Coldairarrow.Util;
 using Colder.Logging.Serilog;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +12,6 @@ namespace CCPP.PaymentAPI
         { 
             Host.CreateDefaultBuilder(args)
                 .ConfigureLoggingDefaults()
-                .UseIdHelper()
                 .UseCache()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

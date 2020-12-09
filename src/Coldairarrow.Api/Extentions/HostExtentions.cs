@@ -54,8 +54,8 @@ namespace Coldairarrow.Api
                         }; break;
                     default: throw new Exception("缓存类型无效");
                 }
-                services.AddCacheManagerConfiguration(ConfigHelper.Configuration, cfg => cfg.WithMicrosoftLogging(services))
-                                    .AddCacheManager<int>(ConfigHelper.Configuration, configure: builder => builder.WithJsonSerializer())
+                services.AddCacheManagerConfiguration(buidlerContext.Configuration, cfg => cfg.WithMicrosoftLogging(services))
+                                    .AddCacheManager<int>(buidlerContext.Configuration, configure: builder => builder.WithJsonSerializer())
                                     .AddCacheManager<DateTime>(inline => inline.WithDictionaryHandle())
                                     .AddCacheManager();
             });

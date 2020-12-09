@@ -16,10 +16,10 @@ namespace CCPP.PaymentAPI
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        public IConfiguration _configuration { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -27,7 +27,7 @@ namespace CCPP.PaymentAPI
             services.AddAutoMapper();
             services.AddEFCoreSharding(config =>
             {
-                var dbOptions = ConfigHelper.Configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
+                var dbOptions = _configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
 
                 config.UseDatabase(dbOptions.ConnectionString, dbOptions.DatabaseType);
             });
@@ -66,26 +66,32 @@ namespace CCPP.PaymentAPI
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //允许body重用
-            app.Use(next => context =>
+            //跨域
+            app.UseCors(x =>
             {
-                context.Request.EnableBuffering();
-                return next(context);
+                x.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .DisallowCredentials();
             })
-            .UseMiddleware<CorsMiddleware>()//跨域
-            .UseDeveloperExceptionPage()
-            .UseStaticFiles(new StaticFileOptions
-            {
-                ServeUnknownFileTypes = true,
-                DefaultContentType = "application/octet-stream"
-            })
-            .UseRouting()
-            .UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
-            app.UseOpenApi(); //添加swagger生成api文档（默认路由文档 /swagger/v1/swagger.json）
-            app.UseSwaggerUi3();//添加Swagger UI到请求管道中(默认路由: /swagger).
+                .UseMiddleware<RequestBodyMiddleware>()
+                .UseMiddleware<RequestLogMiddleware>()
+                .UseDeveloperExceptionPage()
+                .UseStaticFiles(new StaticFileOptions
+                {
+                    ServeUnknownFileTypes = true,
+                    DefaultContentType = "application/octet-stream"
+                })
+                .UseRouting()
+                .UseAuthentication()
+                .UseAuthorization()
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers().RequireAuthorization();
+                })
+                .UseOpenApi()//添加swagger生成api文档（默认路由文档 /swagger/v1/swagger.json）
+                .UseSwaggerUi3()//添加Swagger UI到请求管道中(默认路由: /swagger).
+                ;
         }
     }
 }

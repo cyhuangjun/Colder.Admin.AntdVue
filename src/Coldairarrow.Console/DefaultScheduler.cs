@@ -1,4 +1,6 @@
-﻿using Coldairarrow.Scheduler.Job;
+﻿using Autofac;
+using Coldairarrow.Scheduler.Core;
+using Coldairarrow.Scheduler.Job;
 using Coldairarrow.Util;
 using Microsoft.Extensions.Configuration;
 using Quartz;
@@ -33,7 +35,9 @@ namespace Coldairarrow.Scheduler
         /// </summary>
         public void StartTask()
         {
-            var settings = ConfigHelper.Configuration.GetSection("Scheduler").Get<SchedulerSettings>();
+            var container = RmesAutoFacModule.GetContainer();
+            var configuration = container.Resolve<IConfiguration>();
+            var settings = configuration.GetSection("Scheduler").Get<SchedulerSettings>();
             CreateJob<DepositSynchronizationJob>("DepositSynchronizationJob", settings.DepositSynchronizationJobCronExpression);
             CreateJob<ConfirmTransactionSynchronizationJob>("ConfirmTransactionSynchronizationJob", settings.ConfirmTransactionSynchronizationCronExpression);
             CreateJob<ContractTransactionJob>("ContractTransactionJob", settings.ContractTransactionExpression);

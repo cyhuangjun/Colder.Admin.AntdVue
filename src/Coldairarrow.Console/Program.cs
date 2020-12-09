@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
+using Colder.Logging.Serilog;
+using Coldairarrow.Api;
 
 namespace Coldairarrow.Scheduler
 {
@@ -15,16 +17,17 @@ namespace Coldairarrow.Scheduler
         static async Task Main(string[] args)
         {
             var builder = Host.CreateDefaultBuilder(args)
+                .ConfigureLoggingDefaults()
                 .UseIdHelper()
                 .UseCache()
-                .ConfigureServices(services =>
+                .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddLogging();
+                    //services.AddLogging();
                     services.AddFxServices();
                     services.AddAutoMapper();
                     services.AddEFCoreSharding(config =>
                     {
-                        var dbOptions = ConfigHelper.Configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
+                        var dbOptions = hostContext.Configuration.GetSection("Database:BaseDb").Get<DatabaseOptions>();
                         config.UseDatabase(dbOptions.ConnectionString, dbOptions.DatabaseType);
                     });
                     services.AddSingleton<IScheduler, DefaultScheduler>();
