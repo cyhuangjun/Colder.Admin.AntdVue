@@ -382,7 +382,10 @@ namespace Coldairarrow.Business
         {
             return Db.GetIQueryable<T>();
         }
-
+        public IQueryable<T> GetIQueryable(Expression<Func<T, bool>> expression)
+        { 
+            return this.GetIQueryable().Where(expression);
+        }
         #endregion
 
         #region 执行Sql语句

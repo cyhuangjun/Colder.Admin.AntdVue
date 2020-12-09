@@ -1,0 +1,47 @@
+﻿{
+  "$schema": "http://cachemanager.michaco.net/schemas/cachemanager.json#",
+  "redis": [
+    {
+      "key": "redisConnection",
+      "connectionString": "127.0.0.1:6379,allowAdmin=true",
+      "database": 3
+    }
+  ],
+  "cacheManagers": [
+    {
+      "maxRetries": 1000,
+      "name": "cachename",
+      "retryTimeout": 100,
+      "updateMode": "Up",
+      "backplane": {
+        "key": "redisConnection",
+        "knownType": "Redis",
+        "channelName": "ccpp"
+      },
+      "loggerFactory": {
+        "knownType": "Microsoft"
+      },
+      "serializer": {
+        "knownType": "Json"
+      },
+      "handles": [
+        {
+          "knownType": "SystemRuntime",
+          "enablePerformanceCounters": true,
+          "enableStatistics": true,
+          "expirationMode": "Sliding",
+          "expirationTimeout": "0:0:59",
+          "isBackplaneSource": false,
+          "name": "sys cache"
+        },
+        {
+          "knownType": "Redis",
+          "key": "redisConnection",
+          "expirationMode": "Sliding",
+          "expirationTimeout": "1:0:0",
+          "isBackplaneSource": true
+        }
+      ]
+    }
+  ]
+}

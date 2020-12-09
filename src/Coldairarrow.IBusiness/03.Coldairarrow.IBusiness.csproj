@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CCPP.Cryptocurrency.Common\07.CCPP.Cryptocurrency.Common.csproj" />
     <ProjectReference Include="..\Coldairarrow.Entity\02.Coldairarrow.Entity.csproj" />
     <ProjectReference Include="..\Coldairarrow.Util\01.Coldairarrow.Util.csproj" />
   </ItemGroup>

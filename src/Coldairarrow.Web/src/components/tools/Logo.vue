@@ -1,7 +1,7 @@
 <template>
   <div class="logo">
     <router-link :to="{ path: '/' }">
-      <LogoSvg alt="logo" />
+      <LogoSvg alt="logo" /> 
       <h1 v-if="showTitle">{{ title }}</h1>
     </router-link>
   </div>
@@ -18,7 +18,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: process.env.VUE_APP_ProjectName,
+      default: "CCPP",//process.env.VUE_APP_ProjectName,
       required: false
     },
     showTitle: {
