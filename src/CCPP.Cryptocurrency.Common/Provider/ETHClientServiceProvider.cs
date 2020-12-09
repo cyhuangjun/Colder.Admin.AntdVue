@@ -236,9 +236,12 @@ namespace CCPP.Cryptocurrency.Common.Provider
         /// <returns></returns>
         public virtual ResponseData<decimal> GetAllBalance(int confirm)
         {
+            var address = this._configuration.SysAddress?.Address;
+            if (string.IsNullOrEmpty(address)) 
+                return new ResponseData<decimal>() { Error = "未发现系统地址!" };
             return GetBalance(new BalanceData()
             {
-                Address = this._configuration.SysAddress.Address
+                Address = address
             });
         }
 

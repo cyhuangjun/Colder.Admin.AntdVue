@@ -17,6 +17,7 @@ namespace Coldairarrow.Util.Helper
         /// <returns></returns>
         public static string Decode(string data, string key)
         {
+            if (string.IsNullOrEmpty(data)) return string.Empty;
             byte[] buffer = Convert.FromBase64String(data);
             var securityKey = GetSecurityKey(key);
             var decodeData = AESEncryption.AESDecrypt(buffer, securityKey);
@@ -30,6 +31,7 @@ namespace Coldairarrow.Util.Helper
         /// <returns></returns>
         public static string Encode(string data, string key)
         {
+            if (string.IsNullOrEmpty(data)) return string.Empty;
             var securityKey = GetSecurityKey(key);
             var encodeData = AESEncryption.AESEncrypt(data, securityKey);
             return Convert.ToBase64String(encodeData);

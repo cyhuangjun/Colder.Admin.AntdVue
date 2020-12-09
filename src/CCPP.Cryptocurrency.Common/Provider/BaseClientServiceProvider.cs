@@ -10,7 +10,7 @@ namespace CCPP.Cryptocurrency.Common.Provider
 {
     public abstract class BaseClientServiceProvider
     {
-        protected Uri _url;
+        //protected Uri _url;
         private static Action<object> _writeLogCallback;
         /// <summary>
         /// 默认节点
@@ -38,15 +38,15 @@ namespace CCPP.Cryptocurrency.Common.Provider
                 _writeLogCallback = value;
             }
         }
-        protected ICredentials _credentials;
+        //protected ICredentials _credentials;
         protected const int MaxTimeOut = 10000;
         protected Configuration _configuration; 
 
         public BaseClientServiceProvider(Configuration configuration)
         {
             _configuration = configuration;
-            _url = new Uri($"http://{configuration.Host}:{configuration.Port}");
-            _credentials = new NetworkCredential(configuration.UserName, configuration.Password);
+            //_url = new Uri($"http://{configuration.Host}:{configuration.Port}");
+            //_credentials = new NetworkCredential(configuration.UserName, configuration.Password);
         } 
 
         /// <summary>
@@ -200,9 +200,9 @@ namespace CCPP.Cryptocurrency.Common.Provider
             var requestResult = RestSharpHttpHelper.RestAction<ApiResponse>(host, "/Seeds", RestSharp.Method.POST);
             if (!requestResult.success)
                 throw new Exception(requestResult.error);
-            if (!requestResult.data.Status)
+            if (!(requestResult.data?.Status??false))
             {
-                throw new Exception($"请求失败,失败原因:{requestResult.data.Code}");
+                throw new Exception($"请求失败,失败原因:{requestResult?.data?.Code}");
             }
             return requestResult.data.Data;
         }

@@ -1,4 +1,5 @@
 ﻿using CacheManager.Core;
+using CCPP.Cryptocurrency.Common;
 using Coldairarrow.Business.Base_Manage;
 using Coldairarrow.Business.Foundation;
 using Coldairarrow.Entity;
@@ -11,6 +12,7 @@ using Coldairarrow.Util;
 using EFCore.Sharding;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,17 +30,23 @@ namespace Coldairarrow.Business.Transaction
         ICoinBusiness _coinBusiness;
         IBase_UserBusiness _base_UserBusiness;
         ICacheDataBusiness _cacheDataBusiness;
+        ICryptocurrencyBusiness _cryptocurrencyBusiness;
+        readonly ILogger _logger;
         public AssetsBusiness(IDbAccessor db,
                                 ICacheManager<object> cache,
                                 ICoinBusiness coinBusiness,
                                 IBase_UserBusiness base_UserBusiness,
-                                ICacheDataBusiness cacheDataBusiness) : base(db)
+                                ICacheDataBusiness cacheDataBusiness,
+                                ICryptocurrencyBusiness cryptocurrencyBusiness,
+                                ILogger<AssetsBusiness> logger) : base(db)
         {
             _db = db;
             _cache = cache;
             _coinBusiness = coinBusiness;
             _base_UserBusiness = base_UserBusiness;
             _cacheDataBusiness = cacheDataBusiness;
+            _cryptocurrencyBusiness = cryptocurrencyBusiness;
+            _logger = logger;
         }
 
         #region 外部接口
@@ -74,7 +82,7 @@ namespace Coldairarrow.Business.Transaction
         public async Task<decimal> GetBalance(string tenantId, string coinId)
         {
             var coin = await this._cacheDataBusiness.GetCoinAsync(coinId);
-            if (coin == null) return 0m; 
+            if (coin == null) return 0m;
             var cacheKey = BuildCacheKey(tenantId, coin.Id);
             if (this._cache.Exists(cacheKey))
             {
@@ -92,7 +100,7 @@ namespace Coldairarrow.Business.Transaction
 
         [Transactional]
         public async Task<AjaxResult> UpdateAssets(params AssetsChangeItemDTO[] assetsChangeItems)
-        { 
+        {
             AjaxResult result = new AjaxResult();
             if (assetsChangeItems == null || !assetsChangeItems.Any())
             {
@@ -126,7 +134,7 @@ namespace Coldairarrow.Business.Transaction
                         result.ErrorCode = ErrorCodeDefine.ParameterInvalid;
                         result.Msg = "parameter invalid";
                         return result;
-                    } 
+                    }
                     var wasteBook = new AssetsWasteBook()
                     {
                         ID = Guid.NewGuid().GuidTo16String(),
@@ -137,7 +145,7 @@ namespace Coldairarrow.Business.Transaction
                         RelateBusinessID = item.RelateID,
                         CreateTime = DateTime.Now,
                         ChangeAmount = item.ChangeAvailableAmount,
-                        ChangeFrozenAmount = item.ChangeFrozenAmount, 
+                        ChangeFrozenAmount = item.ChangeFrozenAmount,
                     };
                     var assets = await this.Db.GetIQueryable<Assets>().Where(e => e.TenantId == item.TenantId && e.CoinID == item.CoinID).FirstOrDefaultAsync();
                     if (assets == null)
@@ -151,7 +159,7 @@ namespace Coldairarrow.Business.Transaction
                             FrozenAmount = item.ChangeFrozenAmount,
                             TotalAmount = (item.ChangeAvailableAmount + item.ChangeFrozenAmount),
                         };
-                        inserts.Add(assets); 
+                        inserts.Add(assets);
                     }
                     else
                     {
@@ -161,8 +169,8 @@ namespace Coldairarrow.Business.Transaction
                         assets.Balance += item.ChangeAvailableAmount;
                         assets.FrozenAmount += item.ChangeFrozenAmount;
                         assets.TotalAmount = (assets.Balance + assets.FrozenAmount);
-                        updates.Add(assets); 
-                    } 
+                        updates.Add(assets);
+                    }
                     if (assets.Balance < 0 || assets.FrozenAmount < 0)
                     {
                         result.ErrorCode = ErrorCodeDefine.AssetsNotEnought;
@@ -216,14 +224,14 @@ namespace Coldairarrow.Business.Transaction
                 return result;
             }
             var tenant = await this._cacheDataBusiness.GetTenantByUserIDAsync(assetsChangeItem.TenantId);
-            if(tenant == null)
+            if (tenant == null)
             {
                 result.ErrorCode = ErrorCodeDefine.TenantIDRequired;
                 result.Msg = "tenantId not exist.";
                 return result;
             }
             assetsChangeItem.ChangeAvailableAmount = Math.Round(assetsChangeItem.ChangeAvailableAmount, GlobalData.CurrencyPrecision);
-            assetsChangeItem.ChangeFrozenAmount = Math.Round(assetsChangeItem.ChangeFrozenAmount, GlobalData.CurrencyPrecision); 
+            assetsChangeItem.ChangeFrozenAmount = Math.Round(assetsChangeItem.ChangeFrozenAmount, GlobalData.CurrencyPrecision);
             if (assetsChangeItem.ChangeAvailableAmount == 0 && assetsChangeItem.ChangeFrozenAmount == 0)
             {
                 result.ErrorCode = ErrorCodeDefine.AssetsChangeAmountZero;
@@ -250,6 +258,105 @@ namespace Coldairarrow.Business.Transaction
         {
             var assets = new Assets() { Id = Guid.NewGuid().GuidTo16String(), CoinID = coinId, TenantId = tenantId };
             await this.InsertAsync(assets);
+        }
+
+        public async Task<PageResult<WalletOutDTO>> GetWalletDataList(PageInput<WalletInputDTO> input)
+        {
+            var result = new PageResult<WalletOutDTO>() { Success = true, ErrorCode = ErrorCodeDefine.Success };
+            var list = new List<WalletOutDTO>();
+            var coins = await this._cacheDataBusiness.GetCoinsAsync();
+            if (!string.IsNullOrEmpty(input.Search.CoinID))
+                coins = coins.Where(e => e.Id == input.Search.CoinID).ToList();
+            foreach (var coin in coins)
+            {
+                var wallet = new WalletOutDTO() { Currency = coin.Code, Amount = await GetBalance(coin) };
+                list.Add(wallet);
+            }
+            result.Total = list.Count;
+            result.Data = list;
+            return result;
+
+            async Task<decimal> GetBalance(Coin coin)
+            {
+                try
+                {
+                    if (coin.IsSupportWallet && coin.IsAvailable)
+                    {
+                        var cryptocurrencyProvider = await _cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+                        return cryptocurrencyProvider.GetAllBalance(coin.MinConfirms).Result;
+                    }
+                    else
+                        return 0m;
+                }
+                catch (Exception e)
+                {
+                    this._logger.LogError(e, e.Message);
+                    return 0m;
+                }
+            }
+        }
+
+        public async Task<PageResult<WalletSystemAddressOutDTO>> GetWalletSystemAddressDataList(PageInput<WalletInputDTO> input)
+        {
+            Expression<Func<SysWallet, Coin, WalletSystemAddressOutDTO>> select = (a, b) => new WalletSystemAddressOutDTO
+            {
+                Currency = b.Code
+            };
+            select = select.BuildExtendSelectExpre();
+            var q = from a in this.Db.GetIQueryable<SysWallet>().AsExpandable()
+                    join b in Db.GetIQueryable<Coin>() on a.CoinID equals b.Id into ab
+                    from b in ab.DefaultIfEmpty()
+                    select @select.Invoke(a, b);
+            //筛选
+            var where = LinqHelper.True<WalletSystemAddressOutDTO>();
+            var search = input.Search;
+            if (!string.IsNullOrEmpty(search.CoinID))
+                where = where.And(x => x.CoinID == search.CoinID);
+            var list = await q.Where(where).GetPageResultAsync(input);
+            await SetBalance(list.Data);
+            return list;
+
+            async Task SetBalance(List<WalletSystemAddressOutDTO> systemAddressList)
+            {
+                await Task.Run(() => systemAddressList.ForEach(async item =>
+                {
+                    try
+                    {
+                        var coin = await this._cacheDataBusiness.GetCoinAsync(item.CoinID);
+                        if (coin.IsSupportWallet && coin.IsAvailable)
+                        {
+                            var cryptocurrencyProvider = await _cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+                            var balanceData = new BalanceData() { Address = item.Address };
+                            item.Amount = cryptocurrencyProvider.GetBalance(balanceData).Result;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        this._logger.LogError(e, e.Message);
+                        item.Amount = 0m;
+                    }
+                }));
+            }
+        }
+
+        public async Task CreateSystemAddress(string coinId)
+        {
+            if (string.IsNullOrEmpty(coinId)) return;
+            var coin = await this._cacheDataBusiness.GetCoinAsync(coinId);
+            if (coin.IsSupportWallet && coin.IsAvailable)
+            {
+                var cryptocurrencyProvider = await _cryptocurrencyBusiness.GetCryptocurrencyProviderAsync(coin);
+                var securityKey = string.Empty;
+                if (cryptocurrencyProvider.IsNeedSecurityKey)
+                {
+                    securityKey = Guid.NewGuid().ToString().CreateSign();
+                }
+                var result = cryptocurrencyProvider.CreateWalletAddress(new CreateWalletAddressInput() { SecurityKey = securityKey });
+                if (!string.IsNullOrEmpty(result.Error))
+                    throw new Exception(result.Error);
+            }
+            else
+                throw new Exception("钱包不可用.");
         }
         #endregion
 
