@@ -8,39 +8,39 @@
     @cancel="()=>{this.visible=false}"
   >
     <a-spin :spinning="loading">
-      <a-form ref="form" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }" > 
+      <a-form ref="form" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }" >
         <a-form-item label="单号">
-          {{entity.Id}}
+          {{ entity.Id }}
         </a-form-item>
         <a-form-item label="商户单号">
-          {{entity.ClientOrderId}}
+          {{ entity.ClientOrderId }}
         </a-form-item>
         <a-form-item label="商户备注">
-          {{entity.OrderDescription}}
+          {{ entity.OrderDescription }}
         </a-form-item>
         <a-form-item label="币种">
-          {{entity.Currency}}
+          {{ entity.Currency }}
         </a-form-item>
         <a-form-item label="数量">
-          {{entity.Amount}}
+          {{ entity.Amount }}
         </a-form-item>
         <a-form-item label="状态">
-          {{entity.StatusStr}}
+          {{ entity.StatusStr }}
         </a-form-item>
         <a-form-item label="手续费">
-          {{entity.HandlingFee}}
+          {{ entity.HandlingFee }}
         </a-form-item>
         <a-form-item label="地址">
-          {{entity.AddressTo}}
+          {{ entity.AddressTo }}
         </a-form-item>
         <a-form-item label="TXID">
-          {{entity.TXID}}
+          {{ entity.TXID }}
         </a-form-item>
         <a-form-item label="创建时间">
-          {{entity.CreatedAt}}
+          {{ entity.CreatedAt }}
         </a-form-item>
         <a-form-item label="审批时间">
-          {{entity.ApproveTime}}
+          {{ entity.ApproveTime }}
         </a-form-item>
       </a-form>
     </a-spin>
@@ -49,9 +49,6 @@
 
 <script>
 export default {
-  props: {
-    parentObj: Object
-  },
   data () {
     return {
       layout: {

@@ -38,17 +38,17 @@ export default {
   name: 'UserLayout',
   components: { RouteView },
   mixins: [mixinDevice],
-  data() {
+  data () {
     return {}
   },
-  mounted() {
+  mounted () {
     document.body.classList.add('userLayout')
   },
-  beforeDestroy() {
+  beforeDestroy () {
     document.body.classList.remove('userLayout')
   },
   methods: {
-    getTitle() {
+    getTitle () {
       return process.env.VUE_APP_ProjectName
     }
   }
