@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Coldairarrow.Util\01.Coldairarrow.Util.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Report\" />
+  </ItemGroup>
+
 </Project>

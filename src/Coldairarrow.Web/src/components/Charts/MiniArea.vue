@@ -10,41 +10,48 @@
 </template>
 
 <script>
-import moment from 'moment'
-const data = []
-const beginDay = new Date().getTime()
-
-for (let i = 0; i < 10; i++) {
-  data.push({
-    x: moment(new Date(beginDay + 1000 * 60 * 60 * 24 * i)).format('YYYY-MM-DD'),
-    y: Math.round(Math.random() * 10)
-  })
-}
-
-const tooltip = [
-  'x*y',
-  (x, y) => ({
-    name: x,
-    value: y
-  })
-]
-const scale = [{
-  dataKey: 'x',
-  min: 2
-}, {
-  dataKey: 'y',
-  title: '时间',
-  min: 1,
-  max: 22
-}]
-
 export default {
   name: 'MiniArea',
+  props: {
+    title: {
+      type: String,
+      default: ''
+    },
+    data: {
+      type: Array,
+      default: () => {
+        return []
+      }
+    },
+    scale: {
+      type: Array,
+      default: () => {
+        return [{
+          dataKey: 'x',
+          min: 2
+        }, {
+          dataKey: 'y',
+          title: '时间',
+          min: 1,
+          max: 22
+        }]
+      }
+    },
+    tooltip: {
+      type: Array,
+      default: () => {
+        return [
+          'x*y',
+          (x, y) => ({
+            name: x,
+            value: y
+          })
+        ]
+      }
+    }
+  },
   data () {
     return {
-      data,
-      tooltip,
-      scale,
       height: 100
     }
   }

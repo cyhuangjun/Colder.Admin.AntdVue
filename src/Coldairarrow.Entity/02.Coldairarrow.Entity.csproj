@@ -17,6 +17,7 @@
   <ItemGroup>
     <Folder Include="Admin\Request\" />
     <Folder Include="Admin\Response\" />
+    <Folder Include="Report\" />
   </ItemGroup>
 
   <ItemGroup>

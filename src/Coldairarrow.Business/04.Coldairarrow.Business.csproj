@@ -14,4 +14,8 @@
     <ProjectReference Include="..\Coldairarrow.IBusiness\03.Coldairarrow.IBusiness.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Report\" />
+  </ItemGroup>
+
 </Project>
